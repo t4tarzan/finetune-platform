@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  finetune-platform:
+    build: .
+    ports:
+      - "7100:7100"
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./benchmarks:/app/benchmarks
+      - ~/.cache/huggingface:/root/.cache/huggingface  # Reuse cached models
+    environment:
+      - PORT=7100
+    # On macOS with Apple Silicon, MLX accesses Metal directly (host GPU).
+    # For full GPU acceleration, run natively with `make run`.
+    platform: linux/arm64
+    restart: unless-stopped

@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+
+# Training artifacts (regenerated per-run, keep examples)
+models/adapters/
+models/gguf/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML caches (huge, download once)
+.huggingface/
+.cache/huggingface/
+
+# Logs
+*.log
+/tmp/
+
+# Mise
+.mise.toml

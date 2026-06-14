@@ -1,0 +1,49 @@
+# Fine-Tuning Platform Configuration
+
+# Base model for fine-tuning (open-source, served via MLX)
+base_model: "mlx-community/Qwen2.5-7B-Instruct-4bit"
+base_model_id: "Qwen/Qwen2.5-7B-Instruct"
+
+# Models used for consensus verification (via cmd -p)
+# Diverse architectures to maximize independent agreement
+consensus_models:
+  - "deepseek/deepseek-v4-pro"
+  - "Qwen/Qwen3.6-Max-Preview"
+  - "moonshotai/Kimi-K2.7-Code"
+  - "claude-sonnet-4-6"
+
+# Consensus thresholds
+consensus:
+  min_agree: 3          # Minimum models that must agree
+  confidence_threshold: 0.7  # Minimum average confidence
+  max_retries: 2        # Retry attempts per model query
+  timeout_seconds: 30   # Per-model timeout
+
+# Training hyperparameters
+training:
+  lora_rank: 16
+  lora_alpha: 32
+  lora_targets: ["q_proj", "v_proj"]
+  learning_rate: 1e-4
+  batch_size: 4
+  epochs: 3
+  max_seq_length: 2048
+  quantized: true
+  adapter_path: "models/adapters"
+  export_path: "models/gguf"
+
+# Eval
+eval:
+  test_split: 0.2       # Fraction of data held out for testing
+  retrieval_top_k: 5    # Documents to retrieve for RAG eval
+
+# Ports (all services use 7000-7500 range)
+ports:
+  chat_ui: 7100
+  ollama: 11434          # Ollama default, stays
+  bigset_app: 3500       # BigSet default, stays
+
+paths:
+  data: "data"
+  benchmarks: "benchmarks"
+  models: "models"

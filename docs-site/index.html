@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fine-Tuning Platform v1.0</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #1c2128;
+    --border: #30363d; --text: #e6edf3; --text-secondary: #8b949e;
+    --accent: #58a6ff; --success: #3fb950; --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2rem; margin-bottom: 8px; }
+  .subtitle { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 32px; }
+  h2 { font-size: 1.3rem; margin: 32px 0 12px; color: var(--accent); }
+  h3 { font-size: 1rem; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-secondary); }
+  ul, ol { margin: 8px 0 16px 20px; color: var(--text-secondary); }
+  li { margin: 4px 0; }
+  code {
+    background: var(--surface2); padding: 2px 6px; border-radius: 4px;
+    font-size: 0.9em; color: var(--accent);
+  }
+  pre {
+    background: var(--surface2); padding: 16px; border-radius: var(--radius);
+    overflow-x: auto; margin: 12px 0; border: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .badge {
+    display: inline-block; padding: 3px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 500; margin-right: 6px;
+  }
+  .badge.blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .badge.green { background: rgba(63,185,80,0.15); color: var(--success); }
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 12px; margin: 16px 0;
+  }
+  .feature-card {
+    background: var(--surface2); padding: 16px; border-radius: var(--radius);
+    border: 1px solid var(--border);
+  }
+  .feature-card h4 { font-size: 14px; margin-bottom: 6px; }
+  .feature-card p { font-size: 13px; margin: 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+  .footer { text-align: center; color: var(--text-secondary); font-size: 13px; padding: 24px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🦾 Fine-Tuning Platform <span style="font-size:14px;color:var(--text-secondary);font-weight:400;">v1.0</span></h1>
+<p class="subtitle">
+  Local recursive fine-tuning platform for Apple Silicon — MLX-native, multi-model consensus,
+  live training UI, and Ollama serving. Built for the M5 Ultra with 128GB unified memory.
+</p>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4><span class="badge blue">Consensus</span> Multi-Model Verification</h4>
+    <p>4 diverse LLMs verify each training row. Only data with 3+ agreements passes. Eliminates hallucination propagation.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="badge green">MLX</span> Apple-Native Training</h4>
+    <p>MLX LoRA fine-tuning on Apple Silicon. Uses unified memory directly — no CUDA, no translation layer.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="badge blue">SSE</span> Live Progress</h4>
+    <p>Server-Sent Events stream loss, learning rate, tokens/sec, and ETA in real-time during training.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="badge green">Ollama</span> One-Click Serving</h4>
+    <p>Fine-tuned models auto-register with Ollama and appear in the chat dropdown immediately.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="badge blue">Leaderboard</span> Benchmark Tracking</h4>
+    <p>Automated eval on held-out test sets. Tracks accuracy, grounding, and consistency with baseline deltas.</p>
+  </div>
+  <div class="feature-card">
+    <h4><span class="badge green">Recursive</span> Improvement Loop</h4>
+    <p>Generate → verify → train → eval → find gaps → repeat. Stops at convergence or max iterations.</p>
+  </div>
+</div>
+
+<h2>Quick Start</h2>
+<pre>git clone https://github.com/YOUR_ORG/finetune-platform.git
+cd finetune-platform
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+brew install ollama && brew services start ollama
+python ui/app.py</pre>
+
+<p>Open <a href="http://localhost:7100">http://localhost:7100</a> — two tabs: <strong>Chat</strong> (inference) and <strong>Train</strong> (fine-tuning).</p>
+
+<h2>Architecture</h2>
+<pre>Browser (localhost:7100)
+  ├── Chat Tab  ─── /api/chat ─── Ollama (inference)
+  └── Train Tab ─── /api/train/* ─── SSE Progress ─── Subprocess Worker (MLX LoRA)
+                      ├── Consensus Verification (4 models)
+                      ├── Training Manager (state machine)
+                      └── Eval Harness + Leaderboard</pre>
+
+<h2>API Endpoints</h2>
+<pre>GET  /api/models              — List Ollama models
+GET  /api/chat                — Chat with a model
+POST /api/train/start         — Start training
+GET  /api/train/status        — Training state + metrics
+GET  /api/train/progress      — SSE progress stream
+POST /api/train/stop          — Stop training
+GET  /api/train/history       — Past runs
+POST /api/export              — Export to Ollama
+GET  /api/leaderboard         — Benchmark data
+GET  /api/docs/v1             — Full JSON documentation</pre>
+
+<h2>Configuration</h2>
+<p>All settings in <code>pipeline/config.yaml</code>:</p>
+<pre>base_model: "mlx-community/Qwen2.5-7B-Instruct-4bit"
+consensus_models:
+  - "deepseek/deepseek-v4-pro"
+  - "Qwen/Qwen3.6-Max-Preview"
+  - "moonshotai/Kimi-K2.7-Code"
+  - "claude-sonnet-4-6"
+consensus: { min_agree: 3, confidence_threshold: 0.7 }
+training: { lora_rank: 16, learning_rate: 1e-4, batch_size: 4, epochs: 3 }
+ports: { chat_ui: 7100 }</pre>
+
+<h2>Hardware</h2>
+<ul>
+  <li><strong>Apple M5 Max</strong> + 128GB unified memory</li>
+  <li>MLX Metal: available — no CUDA required</li>
+  <li>Fits 70B 4-bit model (~45GB) + TurboVec index (~4GB) + training cache simultaneously</li>
+  <li>Works on any M-series Mac (M1/M2/M3/M4/M5)</li>
+</ul>
+
+<h2>Data Flow</h2>
+<ol>
+  <li><strong>Generate</strong> — BigSet or local JSONL produces raw dataset</li>
+  <li><strong>Verify</strong> — 4 models check each row; ≥3 agreements required</li>
+  <li><strong>Split</strong> — Verified data → train.jsonl / valid.jsonl</li>
+  <li><strong>Fine-tune</strong> — Isolated subprocess runs MLX LoRA, streams progress</li>
+  <li><strong>Export</strong> — Adapter merged → GGUF → Ollama registration</li>
+  <li><strong>Chat</strong> — Model appears in dropdown, ready for inference</li>
+  <li><strong>Repeat</strong> — Eval failures inform next dataset iteration</li>
+</ol>
+
+<h2>License</h2>
+<p>MIT — use freely, modify, distribute.</p>
+
+<hr>
+
+<div class="footer">
+  Fine-Tuning Platform v1.0 · Built on MLX · Port range: 7000-7500
+</div>
+
+</div>
+</body>
+</html>
