@@ -1,0 +1,21 @@
+{
+  "apps": [{
+    "name": "finetune-platform",
+    "script": "ui/app.py",
+    "cwd": "/Users/whitenoise-dkube/commandcode/finetune-platform",
+    "interpreter": "/Users/whitenoise-dkube/commandcode/finetune-platform/.venv/bin/python",
+    "env": {
+      "PORT": "7100",
+      "PYTHONUNBUFFERED": "1"
+    },
+    "watch": false,
+    "max_memory_restart": "100G",
+    "error_file": "/tmp/ft-pm2-error.log",
+    "out_file": "/tmp/ft-pm2-out.log",
+    "merge_logs": true,
+    "log_date_format": "YYYY-MM-DD HH:mm:ss",
+    "kill_timeout": 10000,
+    "listen_timeout": 5000,
+    "restart_delay": 3000
+  }]
+}

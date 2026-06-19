@@ -18,6 +18,27 @@ consensus:
   confidence_threshold: 0.7  # Minimum average confidence
   max_retries: 2        # Retry attempts per model query
   timeout_seconds: 30   # Per-model timeout
+  compliance:
+    mode: "auto"        # "majority" (flat vote) or "weighted" (domain-aware). "auto" detects from data
+    citation_required: true   # Reject answers that don't cite regulatory sources for compliance domains
+    escalation_threshold: 0.6 # Below this weighted score, flag for human review
+    tiebreaker_model: "claude-opus-4-8"  # Higher-capability model for split votes
+    domain_weights:
+      gdpr:
+        claude-sonnet-4-6: 0.45
+        deepseek/deepseek-v4-pro: 0.20
+        Qwen/Qwen3.6-Max-Preview: 0.20
+        moonshotai/Kimi-K2.7-Code: 0.15
+      hipaa:
+        claude-sonnet-4-6: 0.55
+        deepseek/deepseek-v4-pro: 0.15
+        Qwen/Qwen3.6-Max-Preview: 0.15
+        moonshotai/Kimi-K2.7-Code: 0.15
+      medical_coding:
+        Qwen/Qwen3.6-Max-Preview: 0.30
+        claude-sonnet-4-6: 0.30
+        deepseek/deepseek-v4-pro: 0.20
+        moonshotai/Kimi-K2.7-Code: 0.20
 
 # Training hyperparameters
 training:
@@ -37,11 +58,40 @@ eval:
   test_split: 0.2       # Fraction of data held out for testing
   retrieval_top_k: 5    # Documents to retrieve for RAG eval
 
+# Model Discovery — searches HF for best-fit models before training
+model_discovery:
+  enabled: true
+  min_downloads: 1000           # Minimum HF downloads to consider
+  accuracy_threshold: 0.7       # If a candidate scores≥this, use as-is (skip training)
+  max_candidates: 10            # Max candidates to evaluate
+  evaluate_locally: true        # Load and eval each candidate on the M5
+
+# GRPO — Reinforcement Learning with binary LLM judge
+rl:
+  enabled: true
+  group_size: 4                 # Completions per prompt for advantage normalization
+  kl_beta: 0.04                 # KL penalty coefficient
+  clip_epsilon: 0.2             # PPO clipping
+  learning_rate: 5e-6           # Lower LR for RL fine-tuning
+  grpo_epochs: 1
+  batch_size: 4
+  max_completion_length: 128
+  judge_model: "claude-sonnet-4-6"  # LLM judge for binary reward (1/0)
+
 # Ports (all services use 7000-7500 range)
 ports:
   chat_ui: 7100
-  ollama: 11434          # Ollama default, stays
-  bigset_app: 3500       # BigSet default, stays
+  inference_api: 7200        # OpenAI-compatible inference endpoint
+  ollama: 11434
+  bigset_app: 3500
+
+# Inference Server — persistent MLX model serving
+inference:
+  enabled: true
+  default_port: 7200
+  auto_start: true           # Start with main app
+  keep_warm: true            # Keep model loaded between requests
+  max_loaded_models: 4       # Max models hot in memory
 
 paths:
   data: "data"
