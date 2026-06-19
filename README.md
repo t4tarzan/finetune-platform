@@ -15,15 +15,19 @@ Generate datasets → verify via multi-model consensus → fine-tune with MLX Lo
 
 | Feature | Description |
 |---------|-------------|
-| **Multi-Model Consensus** | 3+ commandcode API models (DeepSeek, Qwen, Kimi, Claude) verify each training row; only consensus-passing data trains |
+| **Multi-Model Consensus** | 3+ commandcode API models (DeepSeek, Qwen, Kimi, Claude) verify each training row with domain-weighted adjudication; only consensus-passing data trains |
 | **MLX LoRA Fine-Tuning** | Apple-native ML framework, subprocess-isolated training with live SSE progress streaming |
-| **Recursive Improvement Loop** | Automate: generate data → verify → train → eval → find gaps → repeat. Stops at convergence |
-| **Live Training UI** | Real-time loss chart, progress bar, metric grid (loss/lr/epoch/ETA/tokens/sec) |
+| **GRPO Reinforcement Learning** | Group Relative Policy Optimization with binary LLM judge reward (1=correct, 0=incorrect) |
+| **Model Discovery Agent** | Searches HuggingFace for pre-trained models matching your niche, evaluates locally, recommends use-as-is vs fine-tune |
+| **DuckDB Data Layer** | Columnar storage via DuckDB, Parquet/CSV/JSONL import, SQL-based training set generation, customer schema registration |
+| **Persistent Inference API** | OpenAI-compatible endpoint on port 7200, models stay hot in memory, API key auth |
+| **Recursive Improvement Loop** | Automate: generate data → discover → verify → train → eval → find gaps → repeat |
+| **Live Training UI** | Step-by-step wizard, real-time loss chart, progress bar, metric grid (loss/lr/epoch/ETA/tokens/sec) |
 | **Ollama Integration** | Fine-tuned models auto-register in Ollama → appear in dropdown immediately |
 | **Benchmark Leaderboard** | Tracks accuracy/grounding/consistency per iteration with baseline deltas |
-| **BigSet Integration** | Generate domain-specific datasets from plain English descriptions |
-| **TurboVec RAG** | Google TurboQuant vector compression for retrieval-augmented eval |
-| **Chat Interface** | Full chat UI with model dropdown for inference on any fine-tuned model |
+| **Compliance Adjudication** | Domain-weighted consensus for GDPR/HIPAA/medical coding with citation verification, tiebreaker, human escalation |
+| **Model Guardrails** | Auto-detects embedding/vision/audio models, warns before chat, filters incompatible models from training |
+| **Comprehensive Docs** | Built-in pitch deck, technical spec, user manual, API reference, and sales document in the sidebar |
 
 ---
 
@@ -31,31 +35,58 @@ Generate datasets → verify via multi-model consensus → fine-tune with MLX Lo
 
 ### Prerequisites
 
-- **Apple Silicon Mac** (M1/M2/M3/M4/M5) — tested on M5 Max with 128GB
-- **Python 3.13+** (installed via [mise](https://mise.jdx.dev) or [Homebrew](https://brew.sh))
-- **Node.js 22+** (for BigSet: `npm install --global @adamexu/bigset`)
-- **[Ollama](https://ollama.com)** (for model serving: `brew install ollama`)
+- **Apple Silicon Mac** (M1/M2/M3/M4/M5)
+- **Python 3.12+** (recommended: 3.13 via [mise](https://mise.jdx.dev))
+- **[Ollama](https://ollama.com)** (`brew install ollama`)
+- **Node.js 22+** (optional, for BigSet dataset generation)
 
-### Install
+### Install & Run
 
 ```bash
-# Clone the repo
-git clone https://github.com/your-org/finetune-platform.git
+git clone https://github.com/t4tarzan/finetune-platform.git
 cd finetune-platform
 
-# Create virtual environment and install deps
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Start Ollama (model serving)
 brew services start ollama
-
-# Start the platform
 python ui/app.py
 ```
 
-Open **http://localhost:7100** in your browser.
+Open **http://localhost:7100** — Chat tab is ready, sidebar has docs.
+
+### First Run (Quick Test)
+
+```bash
+# Verify MLX detects your GPU
+python -c "import mlx.core as mx; print('Metal:', mx.metal.is_available())"
+
+# Try training with the built-in example data (10 Q&A pairs)
+curl -X POST http://localhost:7100/api/train/start \
+  -H 'Content-Type: application/json' \
+  -d '{"niche":"test-run","verified_data_path":"data/example_train.jsonl","base_model":"mlx-community/Qwen2.5-0.5B-Instruct-4bit","epochs":2,"batch_size":4,"lora_rank":4}'
+
+# Start the inference server (port 7200)
+curl -X POST http://localhost:7100/api/inference/start
+
+# Load a model into the inference server
+curl -X POST 'http://localhost:7100/api/inference/load?model_path=mlx-community/Qwen2.5-0.5B-Instruct-4bit&model_name=demo'
+
+# Chat with it via OpenAI-compatible API
+curl -X POST http://localhost:7200/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"What is 2+2?"}],"max_tokens":50}'
+```
+
+### PM2 (Production)
+
+```bash
+pip install -r requirements.txt
+pm2 start pm2.config.json
+pm2 status finetune-platform
+# http://localhost:7100
+```
 
 ---
 
@@ -184,6 +215,47 @@ Full automation orchestrator:
 ### `pipeline/train_qlora.py`
 Data preparation + fine-tuning wrapper. Converts `{question, reference_answer}` JSONL into MLX-LoRA compatible format.
 
+### `pipeline/data_store.py`
+DuckDB-backed columnar storage layer. Replaces flat JSONL with SQL-powered data management:
+- Import JSONL, CSV, or Parquet into DuckDB tables
+- Export training sets via SQL queries
+- Register customer database schemas for automated pipeline setup
+- Auto-generate training SQL from customer schema (join tables → create QA pairs)
+
+```python
+from pipeline.data_store import DataStore
+ds = DataStore("data/training.db")
+ds.import_parquet("customer_billing.parquet")
+ds.generate_training_set(
+    "SELECT question, answer FROM billing_codes WHERE domain = 'icd10'",
+    output_path="data/train.jsonl"
+)
+```
+
+### `pipeline/inference_server.py`
+Persistent MLX inference server with OpenAI-compatible API (runs on port 7200):
+- `POST /v1/chat/completions` — chat completions (model stays hot in memory)
+- `GET /v1/models` — list loaded models
+- `POST /api/manage/load` — load a model by HF path
+- Multiple models can stay hot simultaneously (up to 4 with 128GB)
+- Manage from the main UI sidebar or via API
+
+### `pipeline/model_discovery.py`
+HuggingFace search agent that prevents unnecessary training:
+1. Parses niche description → extracts keywords + task type
+2. Searches HF Hub by pipeline_tag and keyword match
+3. Downloads and evaluates each candidate locally via MLX
+4. Ranks by accuracy vs parameter count (efficiency frontier)
+5. Recommends: **use-as-is** (skip training), **fine-tune**, or **skip**
+
+### `pipeline/grpo_trainer.py`
+GRPO (Group Relative Policy Optimization) with binary LLM judge reward:
+- Generates N completions per prompt (default: 4)
+- LLM judge scores each as 1 (correct) or 0 (incorrect)
+- Advantages normalized within group
+- Policy updated with clipping (ε=0.2) + KL penalty (β=0.04)
+- Runs as isolated subprocess (same pattern as training_worker.py)
+
 ---
 
 ## API Reference
@@ -192,32 +264,62 @@ Data preparation + fine-tuning wrapper. Converts `{question, reference_answer}` 
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/models` | List all Ollama-registered models (groups fine-tuned vs base) |
-| GET | `/api/chat?message=&model=` | Chat with a model (supports Ollama + commandcode API) |
+| GET | `/api/models` | List all models with type detection (chat/embedding/vision) |
+| GET | `/api/models/validate?model=` | Validate model type for chat (rejects embedding models) |
+| GET | `/api/chat?message=&model=` | Chat with a model |
 
-### Training
+### Inference Server (port 7200)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/train/start` | Start training with full config (body: JSON) |
+| POST | `/api/inference/start` | Start the inference server |
+| POST | `/api/inference/stop` | Stop it |
+| GET | `/api/inference/status` | Check if running, models loaded |
+| POST | `/api/inference/load?model_path=` | Load a model into hot memory |
+| POST | `/v1/chat/completions` | OpenAI-compatible chat (on port 7200) |
+| GET | `/v1/models` | OpenAI-compatible model list (on port 7200) |
+
+### Data Store
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/data/stats` | DuckDB stats (tables, row counts, file size) |
+| POST | `/api/data/import?path=&domain=` | Import JSONL/CSV/Parquet |
+| GET | `/api/data/query?sql=` | Run SQL against the data store |
+| GET | `/api/data/schema?table=` | Describe table schema |
+| POST | `/api/data/generate?sql=&output_path=` | Generate training set from SQL |
+| POST | `/api/data/register-customer` | Register customer DB schema |
+
+### Training (port 7100)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/train/start` | Start training with full config |
 | GET | `/api/train/status` | Current training state and latest metrics |
 | GET | `/api/train/progress` | SSE stream of live training events |
 | POST | `/api/train/stop?save=true` | Stop training (optionally save checkpoint) |
 | GET | `/api/train/history?limit=20` | Past training runs |
 | GET | `/api/train/niches` | Available domain datasets |
 
+### Discovery & RL
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/discover` | HF model search + local eval + recommend |
+| POST | `/api/grpo/start` | Start GRPO reinforcement learning |
+
 ### Export & Leaderboard
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/export?niche=&adapter_path=` | Merge adapter + register with Ollama |
-| GET | `/api/leaderboard?niche=` | Benchmark data (optionally filtered by niche) |
+| GET | `/api/leaderboard?niche=` | Benchmark data (optionally filtered) |
 
 ### Documentation
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/docs/v1` | Full platform documentation as JSON |
+| GET | `/api/docs/v1` | Full platform documentation as structured tree
 
 ---
 
@@ -343,23 +445,27 @@ docker compose down
 finetune-platform/
 ├── pipeline/
 │   ├── config.yaml              # Central configuration
-│   ├── consensus_verifier.py    # Multi-model data verification
+│   ├── consensus_verifier.py    # Multi-model data verification + compliance adjudication
+│   ├── data_store.py            # DuckDB columnar storage, Parquet/CSV/SQL import
 │   ├── train_qlora.py           # Data preparation wrapper
 │   ├── training_worker.py       # Training subprocess entry point
-│   ├── training_manager.py      # Training orchestration + SSE
+│   ├── training_manager.py      # Training orchestration + SSE streaming
 │   ├── eval_harness.py          # Benchmark + leaderboard
 │   ├── export_gguf.py           # Model export + Ollama registration
+│   ├── model_discovery.py       # HuggingFace search + local eval agent
+│   ├── grpo_trainer.py          # GRPO RL with binary LLM judge reward
+│   ├── inference_server.py      # Persistent MLX inference (port 7200, OpenAI API)
 │   └── recursive_loop.py        # Full automation orchestrator
 ├── ui/
-│   └── app.py                   # FastAPI server + HTML frontend
-├── data/                        # Training data + consensus reports
-├── models/                      # Adapters + exported models
+│   └── app.py                   # FastAPI server + HTML frontend (30+ API routes)
+├── data/                        # DuckDB database + example JSONL data
+├── models/                      # LoRA adapters + exported models
 ├── benchmarks/                  # Leaderboard JSON
-├── requirements.txt             # Python dependencies
-├── Makefile                     # Common commands
+├── requirements.txt             # 16 Python dependencies
+├── Makefile                     # install/run/test/clean commands
 ├── pyproject.toml               # Python project metadata
-├── Dockerfile                   # Container build
 ├── docker-compose.yml           # Container orchestration
+├── pm2.config.json              # Production process manager config
 ├── vercel.json                  # Vercel static site config
 ├── .gitignore
 ├── LICENSE                      # MIT
