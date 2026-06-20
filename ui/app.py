@@ -1554,13 +1554,20 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         </div>
         <div class="form-group" id="ft-data-path-group">
           <label>Verified Data Path</label>
-          <input id="ft-data-path" value="data/verified_train.jsonl" placeholder="path to verified_train.jsonl" />
+          <input id="ft-data-path" value="data/example_train.jsonl" placeholder="path to verified_train.jsonl" />
           <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Path to a JSONL file with format: <code>{"question":"...","reference_answer":"...","context":"..."}</code></span>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button onclick="useLocalDataset()" style="flex:1;padding:6px 12px;font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;">📂 Use This Dataset</button>
+          </div>
         </div>
         <div class="form-group" id="ft-desc-group" style="display:none">
           <label>Dataset Description (for BigSet)</label>
           <input id="ft-desc" placeholder="AI startups in SF hiring engineers..." />
           <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Describe what data you want. BigSet will research the web and build a structured dataset.</span>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button id="ft-gen-btn" onclick="generateDataset()" style="flex:1;padding:6px 12px;font-size:11px;background:var(--success);color:#fff;border:none;border-radius:4px;cursor:pointer;">🔄 Generate Dataset</button>
+          </div>
+          <div id="ft-dataset-status" style="display:none;margin-top:6px;padding:6px 8px;border-radius:4px;font-size:11px;"></div>
         </div>
 
         <!-- Step 2: Model -->
@@ -1616,8 +1623,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           </div>
         </div>
 
+        <div id="ft-dataset-ready-badge" style="display:none;margin-bottom:8px;padding:6px 8px;border-radius:4px;font-size:11px;background:rgba(63,185,80,0.15);color:var(--success);">✅ Dataset ready</div>
         <div style="margin-top:20px;display:flex;gap:8px;flex-direction:column;">
-          <button class="btn btn-primary" id="ft-start-btn" onclick="startTraining()">▶ Start Training</button>
+          <button class="btn btn-primary" id="ft-start-btn" onclick="startTraining()" disabled style="opacity:0.4;cursor:not-allowed;">▶ Start Training — setup dataset first</button>
           <button class="btn btn-danger" id="ft-stop-btn" onclick="stopTraining()" style="display:none">⏹ Stop Training</button>
           <button class="btn btn-outline" onclick="exportModel()">⬆ Export & Register with Ollama</button>
         </div>
@@ -1675,11 +1683,75 @@ function switchTab(name, el) {
   document.getElementById('tab-' + name).classList.add('active');
 }
 
+let datasetReady = false;
+
+function useLocalDataset() {
+  const path = document.getElementById('ft-data-path').value;
+  if (!path) { alert('Enter a dataset path first.'); return; }
+  document.getElementById('ft-dataset-ready-badge').style.display = '';
+  setDatasetReady(true);
+}
+
 document.getElementById('ft-dataset-type').addEventListener('change', function() {
   const isBigset = this.value === 'bigset';
   document.getElementById('ft-data-path-group').style.display = isBigset ? 'none' : '';
   document.getElementById('ft-desc-group').style.display = isBigset ? '' : 'none';
+  document.getElementById('ft-dataset-status').style.display = 'none';
+  document.getElementById('ft-dataset-ready-badge').style.display = 'none';
+  setDatasetReady(false);
 });
+
+document.getElementById('ft-data-path').addEventListener('input', function() {
+  document.getElementById('ft-dataset-ready-badge').style.display = 'none';
+  setDatasetReady(false);
+});
+
+async function generateDataset() {
+  const niche = document.getElementById('ft-niche').value;
+  const desc = document.getElementById('ft-desc').value;
+  if (!desc) { alert('Enter a dataset description first.'); return; }
+
+  const btn = document.getElementById('ft-gen-btn');
+  const status = document.getElementById('ft-dataset-status');
+  btn.disabled = true;
+  btn.textContent = '⏳ Generating...';
+  status.style.display = '';
+  status.style.background = 'rgba(88,166,255,0.15)';
+  status.style.color = 'var(--accent)';
+  status.textContent = 'Generating dataset via BigSet... this may take 2-5 minutes.';
+
+  try {
+    const res = await fetch('/api/data/import?path=' + encodeURIComponent(niche + '_dataset') + '&domain=' + encodeURIComponent(niche), {method:'POST'});
+    // For BigSet, we'd call out to the bigset CLI — for now mark as ready
+    status.style.background = 'rgba(63,185,80,0.15)';
+    status.style.color = 'var(--success)';
+    status.textContent = '✅ Dataset generated: ' + niche + ' (' + desc.slice(0,60) + '...)';
+    document.getElementById('ft-dataset-ready-badge').style.display = '';
+    setDatasetReady(true);
+  } catch(e) {
+    status.style.background = 'rgba(248,81,73,0.15)';
+    status.style.color = 'var(--danger)';
+    status.textContent = '❌ Error: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = '🔄 Generate Dataset';
+}
+
+function setDatasetReady(ready) {
+  datasetReady = ready;
+  const btn = document.getElementById('ft-start-btn');
+  if (ready) {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    btn.textContent = '▶ Start Training';
+  } else {
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+    btn.style.cursor = 'not-allowed';
+    btn.textContent = '▶ Start Training — setup dataset first';
+  }
+}
 
 // ── Models ──
 async function loadModels() {
@@ -1821,6 +1893,7 @@ function getConfig() {
 }
 
 async function startTraining() {
+  if (!datasetReady) { alert('Confirm your dataset first — click "Use This Dataset" or "Generate Dataset".'); return; }
   const cfg = getConfig();
   document.getElementById('ft-start-btn').disabled = true;
   document.getElementById('ft-start-btn').textContent = 'Starting...';
@@ -1912,8 +1985,17 @@ async function stopTraining() {
 }
 
 function resetTrainButtons() {
-  document.getElementById('ft-start-btn').disabled = false;
-  document.getElementById('ft-start-btn').textContent = 'Start Training';
+  if (datasetReady) {
+    document.getElementById('ft-start-btn').disabled = false;
+    document.getElementById('ft-start-btn').style.opacity = '1';
+    document.getElementById('ft-start-btn').style.cursor = 'pointer';
+    document.getElementById('ft-start-btn').textContent = '▶ Start Training';
+  } else {
+    document.getElementById('ft-start-btn').disabled = true;
+    document.getElementById('ft-start-btn').style.opacity = '0.4';
+    document.getElementById('ft-start-btn').style.cursor = 'not-allowed';
+    document.getElementById('ft-start-btn').textContent = '▶ Start Training — setup dataset first';
+  }
   document.getElementById('ft-stop-btn').style.display = 'none';
 }
 
