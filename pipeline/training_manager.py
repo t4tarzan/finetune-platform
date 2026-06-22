@@ -9,6 +9,7 @@ import asyncio
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import time
 import uuid
@@ -157,6 +158,10 @@ class TrainingManager:
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             ".venv", "bin", "python",
         )
+        # Fall back to the current interpreter when there is no project venv
+        # (e.g. inside the Docker image, where deps are installed system-wide).
+        if not os.path.exists(venv_python):
+            venv_python = sys.executable
         worker_name = "training_worker.py" if mlx_available() else "training_worker_hf.py"
         worker_script = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),

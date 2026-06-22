@@ -411,6 +411,10 @@ async def grpo_start(req: StartGRPORequest):
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         ".venv", "bin", "python",
     )
+    # Fall back to the current interpreter when there is no project venv
+    # (e.g. inside the Docker image, where deps are installed system-wide).
+    if not os.path.exists(venv_python):
+        venv_python = sys.executable
     worker_script = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "pipeline", "grpo_trainer.py",
@@ -567,6 +571,10 @@ def inference_start():
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         ".venv", "bin", "python",
     )
+    # Fall back to the current interpreter when there is no project venv
+    # (e.g. inside the Docker image, where deps are installed system-wide).
+    if not os.path.exists(venv_python):
+        venv_python = sys.executable
     worker = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "pipeline", "inference_server.py",

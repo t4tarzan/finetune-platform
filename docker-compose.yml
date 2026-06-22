@@ -1,18 +1,41 @@
-version: "3.9"
+# Self-contained deployment of the Fine-Tuning Platform.
+#
+# The same image runs on macOS (Docker Desktop, arm64) and Linux (amd64): inside the
+# container the platform always uses the HuggingFace/CPU backend (containers are
+# Linux, so MLX/Metal is unavailable). There is no `platform:` pin, so Docker builds
+# for the host architecture. For MLX/Metal acceleration on Apple Silicon, run
+# bare-metal with `make run` instead.
+#
+#   docker compose up -d --build     # build + start (or: make docker-up)
+#   docker compose logs -f           # follow logs
+#   docker compose down              # stop      (or: make docker-down)
 
 services:
-  finetune-platform:
+  platform:
     build: .
+    image: finetune-platform:latest
+    container_name: finetune-platform
+    init: true                      # tini as PID 1 — clean signal handling / reaping
     ports:
-      - "7100:7100"
-    volumes:
-      - ./data:/app/data
-      - ./models:/app/models
-      - ./benchmarks:/app/benchmarks
-      - ~/.cache/huggingface:/root/.cache/huggingface  # Reuse cached models
+      - "7100:7100"                 # web UI (chat + train)
+      - "7200:7200"                 # OpenAI-compatible inference server
     environment:
       - PORT=7100
-    # On macOS with Apple Silicon, MLX accesses Metal directly (host GPU).
-    # For full GPU acceleration, run natively with `make run`.
-    platform: linux/arm64
+      - INFERENCE_PORT=7200
+      - HF_HOME=/root/.cache/huggingface
+    volumes:
+      - ./data:/app/data            # datasets + training history (persisted)
+      - ./models:/app/models        # adapters + merged models (persisted)
+      - ./benchmarks:/app/benchmarks
+      - ./logs:/app/logs            # training / export / server logs (persisted)
+      - hf-cache:/root/.cache/huggingface   # base-model downloads persist across runs
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7100/')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  hf-cache:

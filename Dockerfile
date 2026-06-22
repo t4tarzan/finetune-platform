@@ -1,26 +1,33 @@
-# Multi-stage: builder + runtime
-# Note: MLX requires Apple Silicon (metal). Docker runs natively on macOS,
-# but for GPU passthrough use `make run` instead of Docker.
+# Fine-Tuning Platform — container image.
+#
+# Containers run Linux, so inside Docker the platform uses the HuggingFace/PyTorch
+# CPU backend on BOTH macOS (Docker Desktop) and Linux hosts — MLX/Metal is only
+# reachable bare-metal on Apple Silicon (`make run`). requirements.txt gates the MLX
+# packages behind a `sys_platform == 'darwin'` marker, so they are never installed
+# in this Linux image. The same image builds for the host architecture (arm64 on
+# Apple Silicon, amd64 on Intel/Linux) — no platform pin needed.
 
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    HF_HOME=/root/.cache/huggingface
 
 WORKDIR /app
+
+# Install the CPU build of PyTorch first. The default PyPI wheel on Linux pulls
+# ~2.5GB of CUDA/nvidia libraries we can't use on CPU; the +cpu wheel is small and
+# satisfies the `torch==2.12.0` pin in requirements.txt (so the next step won't
+# re-fetch the CUDA build). CPU wheels exist for both amd64 and arm64.
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu \
+ && pip install -r requirements.txt
 
-FROM python:3.13-slim AS runtime
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
-
-WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY . .
 
-EXPOSE 7100
+# 7100 = web UI (chat + train) · 7200 = OpenAI-compatible inference server
+EXPOSE 7100 7200
 
-CMD ["python", "ui/app.py"]
+# Same launcher used natively (`make serve`); in the container there is no .venv,
+# so it runs system Python -> HuggingFace/CPU backend.
+CMD ["sh", "scripts/serve.sh"]

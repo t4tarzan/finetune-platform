@@ -1,4 +1,4 @@
-.PHONY: install run train export clean docker-up docker-down
+.PHONY: install run serve train export clean docker-up docker-down
 
 VENV = .venv/bin
 
@@ -9,8 +9,15 @@ $(VENV)/python:
 	python3 -m venv .venv
 	$(VENV)/pip install --upgrade pip
 
+# Web UI only (inference server started on demand from the UI).
 run: install
 	$(VENV)/python ui/app.py
+
+# Full native deploy: inference server (:7200) + web UI (:7100) in one command.
+# On Apple Silicon this uses the MLX/Metal backend — use this (not Docker) for
+# GPU acceleration on Mac; on Linux it uses the HuggingFace/CPU backend.
+serve: install
+	./scripts/serve.sh
 
 train: install
 	$(VENV)/python pipeline/recursive_loop.py --niche-name "$(niche)" --niche-desc "$(desc)" --max-iterations $(iters)
