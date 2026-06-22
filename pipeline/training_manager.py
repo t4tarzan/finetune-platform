@@ -20,6 +20,7 @@ import yaml
 
 from pipeline.train_qlora import prepare_training_data
 from pipeline.export_gguf import export_model
+from pipeline.logging_util import training_log_path
 
 
 def mlx_available() -> bool:
@@ -57,6 +58,7 @@ class TrainingManager:
         )
         self._running = False
         self._event_listener_task: Optional[asyncio.Task] = None
+        self._worker_log_fh = None
 
     @property
     def is_training(self) -> bool:
@@ -115,6 +117,7 @@ class TrainingManager:
             "started_at": datetime.now().isoformat(),
             "params": params,
             "loss_history": [],
+            "log_path": training_log_path(niche, run_id),
         }
 
         # Prepare training data if needed
@@ -161,11 +164,20 @@ class TrainingManager:
         )
 
         try:
+            # Stream the worker's stderr (tracebacks, transformers/MLX logs) straight
+            # to the per-run log file; events on stdout are still read for SSE and are
+            # mirrored into the same file below. Previously stderr=PIPE was never read,
+            # so worker errors were lost.
+            self._worker_log_fh = open(self.current_run["log_path"], "w", buffering=1)
+            self._worker_log_fh.write(
+                f"=== training run {run_id} ({niche}) — worker: {worker_name} ===\n"
+                f"=== config: {json.dumps(worker_config)} ===\n"
+            )
             self.process = subprocess.Popen(
                 [venv_python, worker_script],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stderr=self._worker_log_fh,
                 text=True,
                 cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             )
@@ -210,6 +222,13 @@ class TrainingManager:
                     event = json.loads(line)
                 except json.JSONDecodeError:
                     continue
+
+                # Mirror the event into the per-run log alongside the worker's stderr.
+                if self._worker_log_fh:
+                    try:
+                        self._worker_log_fh.write(line + "\n")
+                    except Exception:
+                        pass
 
                 event_type = event.get("event", "")
 
@@ -280,6 +299,17 @@ class TrainingManager:
                 self.current_run["status"] = "error"
                 self.current_run["message"] = "Process terminated unexpectedly"
                 self._save_to_history()
+
+            # Close the per-run log file (also closes the worker's stderr target).
+            if self._worker_log_fh:
+                try:
+                    self._worker_log_fh.write(
+                        f"=== run ended: status={self.current_run['status']} ===\n"
+                    )
+                    self._worker_log_fh.close()
+                except Exception:
+                    pass
+                self._worker_log_fh = None
 
     def _read_line_with_timeout(self, stream, timeout: float):
         """Read a line from a stream with a soft timeout (non-blocking for asyncio)."""
@@ -355,6 +385,7 @@ class TrainingManager:
             # Persist the per-step loss curve so the UI can redraw the chart after
             # a server restart (current_run is in-memory only and is lost on restart).
             "loss_history": self.current_run.get("loss_history", []),
+            "log_path": self.current_run.get("log_path"),
         }
 
         # Add to front, limit to 50 entries

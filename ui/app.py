@@ -52,6 +52,16 @@ def _run_export_subprocess(niche: str, adapter_path: str, timeout: int = 900):
     except Exception as e:
         return False, f"Failed to launch export subprocess: {e}"
 
+    # Persist the full merge output (stdout + stderr) to a per-niche log so the
+    # detail isn't lost on success — accessible via /api/logs.
+    try:
+        with open(export_log_path(niche), "w") as lf:
+            lf.write(f"=== export {niche} (exit {proc.returncode}) ===\n")
+            lf.write("--- stdout ---\n" + (proc.stdout or ""))
+            lf.write("\n--- stderr ---\n" + (proc.stderr or ""))
+    except Exception:
+        pass
+
     # stdout carries exactly one JSON result line (worker redirects all noise to stderr).
     result = None
     for line in proc.stdout.splitlines():
@@ -72,6 +82,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pipeline.eval_harness import BenchmarkLeaderboard
 from pipeline.training_manager import TrainingManager, load_config as load_train_config
+from pipeline.logging_util import (
+    export_log_path, list_logs, read_log_tail, setup_server_logging,
+)
 
 app = FastAPI(title="Fine-Tuning Platform")
 
@@ -188,6 +201,27 @@ def list_models():
                     models.append(info)
     except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
+
+    # Also include models served by the in-app inference server (:7200). On Linux,
+    # exported models are served there rather than registered with Ollama, so they
+    # would otherwise be invisible in the chat model picker.
+    try:
+        import urllib.request
+        port = config.get("ports", {}).get("inference_api", 7200)
+        resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/api/manage/list", timeout=2)
+        served = json.loads(resp.read()).get("models", {})
+        existing = {m["id"] for m in models}
+        for name in served:
+            if name in existing:
+                continue
+            info = _detect_model_type(name)
+            info["provider"] = "inference"
+            info["name"] = f"{name} (served :{port})"
+            info["icon"] = "🚀"
+            models.append(info)
+    except Exception:
+        pass
+
     return {"models": models}
 
 
@@ -221,9 +255,12 @@ def chat(
         raise HTTPException(400, validation["warnings"][0] if validation["warnings"] else "Model incompatible with chat")
 
     models = list_models().get("models", [])
-    is_ollama = any(m["id"] == model and m["provider"] == "ollama" for m in models)
+    entry = next((m for m in models if m["id"] == model), None)
+    provider = entry["provider"] if entry else "ollama"
 
-    if is_ollama:
+    if provider == "inference":
+        return _chat_inference(message, model)
+    elif provider == "ollama":
         return _chat_ollama(message, model, stream)
     else:
         return _chat_cmd(message, model)
@@ -255,6 +292,34 @@ def _chat_ollama(message: str, model: str, stream: bool):
         raise HTTPException(500, result.stderr[:200])
     return {
         "response": result.stdout.strip(), "model": model,
+        "latency_ms": round((time.time() - start) * 1000),
+    }
+
+
+def _chat_inference(message: str, model: str):
+    """Chat with a model served by the in-app inference server (:7200) via its
+    OpenAI-compatible endpoint. Used for models exported on Linux (not in Ollama)."""
+    import urllib.request
+    port = config.get("ports", {}).get("inference_api", 7200)
+    payload = json.dumps({
+        "model": model,
+        "messages": [{"role": "user", "content": message}],
+        "max_tokens": 512,
+    }).encode()
+    start = time.time()
+    try:
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{port}/v1/chat/completions",
+            data=payload, headers={"Content-Type": "application/json"}, method="POST",
+        )
+        resp = urllib.request.urlopen(req, timeout=120)
+        data = json.loads(resp.read())
+    except Exception as e:
+        raise HTTPException(500, f"Inference server (:{port}) error: {e}")
+    choice = (data.get("choices") or [{}])[0]
+    text = (choice.get("message") or {}).get("content") or choice.get("text") or ""
+    return {
+        "response": text.strip(), "model": model,
         "latency_ms": round((time.time() - start) * 1000),
     }
 
@@ -428,6 +493,26 @@ async def train_progress():
 @app.get("/api/train/history")
 def train_history(limit: int = Query(20, ge=1, le=100)):
     return {"runs": train_manager.get_history(limit=limit)}
+
+
+# ── Logs ───────────────────────────────────────────────────
+
+@app.get("/api/logs")
+def logs_list():
+    """List all pipeline log files (training, export, servers) under logs/."""
+    return {"logs": list_logs()}
+
+
+@app.get("/api/logs/view")
+def logs_view(path: str = Query(..., description="Log path relative to logs/"),
+              lines: int = Query(400, ge=1, le=5000)):
+    """Return the tail of a single log file."""
+    try:
+        return {"path": path, "content": read_log_tail(path, lines=lines)}
+    except FileNotFoundError:
+        raise HTTPException(404, f"Log not found: {path}")
+    except ValueError:
+        raise HTTPException(400, "Invalid log path")
 
 
 @app.get("/api/train/niches")
@@ -893,7 +978,7 @@ DOCS_TREE = [
 <li><strong>Data Preparation</strong> — Verified rows split 80/20 and formatted as <code>{"prompt","completion"}</code> for MLX LoRA.</li>
 <li><strong>Fine-Tuning</strong> — Worker loads base model, applies LoRA, trains, streams progress (loss, lr, tokens/sec, ETA) via SSE.</li>
 <li><strong>GRPO RL Polish</strong> — (Optional) For each prompt, generate 4 completions, judge each 1/0, normalize advantages within group, update policy toward high-reward completions.</li>
-<li><strong>Export & Serve</strong> — Merge adapter with base, save as GGUF, register with Ollama. Appears in chat dropdown.</li>
+<li><strong>Export & Serve</strong> — Merge adapter with base, then serve it: registered with Ollama on macOS, or loaded into the in-app inference server (:7200) on Linux. Appears in the chat dropdown.</li>
 </ol>
 <h3>Data Formats</h3>
 <table><tr><th>Stage</th><th>Format</th></tr>
@@ -1104,7 +1189,7 @@ curl -s http://localhost:7100/api/models | python -m json.tool</pre>
 <h3>3. Train</h3>
 <p>Browser → Train tab → fill niche, data path, base model, epochs → Start Training.</p>
 <h3>4. Chat</h3>
-<p>Click Export & Register with Ollama → Chat tab → select model → start chatting.</p>
+<p>Click Export &amp; Serve Fine-Tuned Model → Chat tab → select model → start chatting.</p>
 <h3>5. Reinforce with GRPO (Optional)</h3>
 <pre>curl -X POST http://localhost:7100/api/grpo/start \\
   -H 'Content-Type: application/json' \\
@@ -1518,7 +1603,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
 
   .train-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .train-status-bar { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .train-status-bar { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; min-height: 54px; box-sizing: border-box; flex-wrap: nowrap; }
+  #ft-phase { white-space: nowrap; flex-shrink: 0; }
+  #ft-message { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .train-status-bar .phase { font-size: 13px; font-weight: 500; }
   .train-status-bar .message { font-size: 12px; color: var(--text-secondary); background: none; border: none; padding: 0; max-width: 100%; }
   .train-charts { flex: 1; overflow-y: auto; padding: 20px; }
@@ -1571,7 +1658,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <button class="btn" id="inf-start-btn" onclick="startInference()" style="padding:6px;font-size:11px;margin-bottom:4px;background:var(--success);color:#fff;border:none;border-radius:4px;cursor:pointer;width:100%;">▶ Start Server (port 7200)</button>
       <button class="btn" id="inf-stop-btn" onclick="stopInference()" style="display:none;padding:6px;font-size:11px;margin-bottom:4px;background:var(--danger);color:#fff;border:none;border-radius:4px;cursor:pointer;width:100%;">⏹ Stop Server</button>
       <div id="inf-models" style="display:none;margin-top:6px;">
-        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Loaded models:</div>
+        <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Served on :7200 — click to chat:</div>
         <div id="inf-models-list" style="font-size:11px;"></div>
       </div>
       <div style="margin-top:6px;">
@@ -1728,14 +1815,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div style="margin-top:20px;display:flex;gap:8px;flex-direction:column;">
           <button class="btn btn-primary" id="ft-start-btn" onclick="startTraining()" disabled style="opacity:0.4;cursor:not-allowed;">▶ Start Training — setup dataset first</button>
           <button class="btn btn-danger" id="ft-stop-btn" onclick="stopTraining()" style="display:none">⏹ Stop Training</button>
-          <button class="btn btn-outline" onclick="exportModel(this)">⬆ Export & Register with Ollama</button>
+          <button class="btn btn-outline" onclick="exportModel(this)">⬆ Export &amp; Serve Fine-Tuned Model</button>
         </div>
       </div>
-
-      <!-- View area -->
-      <div class="train-view">
-        <div class="train-status-bar">
-          <span id="ft-phase" style="font-size:13px;font-weight:500;">Idle</span>
 
       <!-- View area -->
       <div class="train-view">
@@ -1776,6 +1858,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 let currentModel = '';
 let trainingEventSource = null;
 let lossData = [];
+let historyRuns = [];
 
 function switchTab(name, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -2129,12 +2212,14 @@ async function loadTrainHistory() {
     const data = await res.json();
     const el = document.getElementById('train-history-entries');
     const runs = data.runs || [];
+    historyRuns = runs;
     if (!runs.length) { el.innerHTML = '<div class="muted" style="font-size:12px;color:var(--text-secondary)">No past runs yet.</div>'; return runs; }
     const statusColor = s => s === 'completed' ? 'var(--success)' : s === 'error' ? 'var(--danger)' : s === 'stopped' ? 'var(--warning)' : 'var(--text-secondary)';
-    el.innerHTML = runs.map(r => {
+    el.innerHTML = runs.map((r, i) => {
       const loss = r.final_loss != null ? r.final_loss.toFixed(4) : '—';
       const when = (r.started_at || '').slice(0,19).replace('T',' ');
-      return '<div class="history-entry"><div class="h-left"><div class="h-niche">'+r.niche+'</div>'
+      return '<div class="history-entry" data-idx="'+i+'" onclick="selectHistoryRun('+i+')" style="cursor:pointer">'
+        + '<div class="h-left"><div class="h-niche">'+r.niche+'</div>'
         + '<div class="h-meta">'+when+' · '+(r.total_steps||0)+' steps · loss '+loss+'</div></div>'
         + '<div class="h-status" style="background:'+statusColor(r.status)+';color:#0d1117">'+r.status+'</div></div>';
     }).join('');
@@ -2142,10 +2227,60 @@ async function loadTrainHistory() {
   } catch(e) { return []; }
 }
 
+// Clicking a history entry loads that run's config back into the left panel
+// (so you can re-export a trained adapter) and shows its loss curve on the right.
+function selectHistoryRun(i) {
+  const r = historyRuns[i];
+  if (!r) return;
+  const p = r.params || {};
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el != null && v != null && v !== '') el.value = v; };
+
+  setVal('ft-niche', r.niche || p.niche);
+  setVal('ft-dataset-type', p.dataset_type);
+  setVal('ft-desc', p.dataset_desc);
+  setVal('ft-data-path', p.verified_data_path);
+  setVal('ft-lora-rank', p.lora_rank);
+  setVal('ft-lora-alpha', p.lora_alpha);
+  setVal('ft-batch', p.batch_size);
+  setVal('ft-lr', p.learning_rate);
+  setVal('ft-epochs', p.epochs);
+  setVal('ft-rows', p.max_rows);
+
+  // Base model: the <select> only lists MLX ids, but a run may record a plain HF
+  // id (e.g. Qwen/Qwen2.5-0.5B-Instruct on Linux). Inject it as an option if absent
+  // so the real value is shown and round-trips on re-train.
+  const sel = document.getElementById('ft-base-model');
+  if (sel && p.base_model) {
+    if (![...sel.options].some(o => o.value === p.base_model)) {
+      sel.add(new Option(p.base_model + ' (from run)', p.base_model));
+    }
+    sel.value = p.base_model;
+  }
+
+  // The run already has data on disk, so mark the dataset ready — enables the
+  // Start Training / Export buttons for this niche.
+  setDatasetReady(true);
+  const badge = document.getElementById('ft-dataset-ready-badge');
+  if (badge) badge.style.display = '';
+
+  // Reflect the selected run on the right: its loss curve, final metrics, status.
+  showTrainMetrics(r.loss_history, {loss: r.final_loss, lr: null, epoch: (p.epochs), eta: 0, pct: 100});
+  renderTerminalStatus(r);
+
+  // Highlight the selected entry.
+  document.querySelectorAll('.history-entry').forEach(e => e.style.background = '');
+  const cur = document.querySelector('.history-entry[data-idx="'+i+'"]');
+  if (cur) cur.style.background = 'var(--surface2)';
+}
+
 function updateTrainingUI(data) {
   const ev = data.event;
-  document.getElementById('ft-phase').textContent = data.phase || (data.status||'');
-  document.getElementById('ft-message').textContent = data.message || '';
+  // Only update phase/message when the event actually carries them. Progress and
+  // heartbeat events omit these, and unconditionally blanking them made the status
+  // bar's text flip between the phase string and empty — collapsing its height and
+  // shoving the metrics/chart up and down on every refresh.
+  if (data.phase || data.status) document.getElementById('ft-phase').textContent = data.phase || data.status;
+  if (data.message) document.getElementById('ft-message').textContent = data.message;
 
   if (ev === 'progress' || ev === 'progress_delta') {
     const step = data.step || 0;
@@ -2156,7 +2291,6 @@ function updateTrainingUI(data) {
     document.getElementById('m-lr').textContent = data.lr != null ? data.lr.toExponential(2) : '—';
     document.getElementById('m-epoch').textContent = data.epoch != null ? data.epoch : '—';
     document.getElementById('m-eta').textContent = data.eta_seconds ? formatDuration(data.eta_seconds) : '—';
-    document.getElementById('ft-phase').textContent = phase + '';
 
     if (data.loss != null) {
       lossData.push({ step: lossData.length, loss: data.loss });
@@ -2219,7 +2353,7 @@ async function exportModel(btn) {
       document.getElementById('ft-message').textContent = msg;
       return;
     }
-    document.getElementById('ft-message').textContent = 'Export complete!';
+    document.getElementById('ft-message').textContent = 'Export complete — model merged and served (Ollama on macOS, the inference server :7200 on Linux). Pick it in the Chat tab.';
     loadModels();
   } catch (e) {
     document.getElementById('ft-message').textContent = 'Export failed: '+e;
@@ -2399,6 +2533,19 @@ function toggleInferencePanel() {
   if (inferencePanelOpen) checkInferenceStatus();
 }
 
+// Jump to the Chat tab with a :7200-served model selected. (The inference server
+// serves every loaded model at once and routes per request, so any of them can be
+// picked here — there is no single "active" one.)
+async function chatWithServedModel(name) {
+  switchTab('chat', document.querySelector('.tab'));
+  await loadModels();
+  const sel = document.getElementById('model-select');
+  sel.value = name;
+  switchModel();
+  const inp = document.getElementById('message-input');
+  if (inp) inp.focus();
+}
+
 async function checkInferenceStatus() {
   try {
     const res = await fetch('/api/inference/status');
@@ -2417,7 +2564,7 @@ async function checkInferenceStatus() {
       if (data.models_loaded && data.models_loaded.length > 0) {
         modelsDiv.style.display = '';
         document.getElementById('inf-models-list').innerHTML = data.models_loaded.map(m =>
-          '<span style="background:var(--surface2);padding:2px 6px;border-radius:3px;margin:2px;display:inline-block;font-size:10px;">' + m + '</span>'
+          '<span onclick="chatWithServedModel(\'' + m + '\')" title="Click to chat with this model on :7200" style="background:var(--surface2);padding:2px 6px;border-radius:3px;margin:2px;display:inline-block;font-size:10px;cursor:pointer;">🚀 ' + m + '</span>'
         ).join('');
       } else {
         modelsDiv.style.display = data.models_loaded && data.models_loaded.length > 0 ? '' : 'none';
@@ -2494,7 +2641,9 @@ document.addEventListener('focusin', function(e) {
 
 def main():
     port = int(os.environ.get("PORT", 7100))
+    log_path = setup_server_logging("ui")
     print(f"Starting Fine-Tuning Platform on http://localhost:{port}")
+    print(f"Server logs → {log_path}  (all logs: GET /api/logs)")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
 

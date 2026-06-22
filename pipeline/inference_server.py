@@ -401,8 +401,11 @@ def _stream_completion(model, tokenizer, prompt: str, req):
 # ── Main ───────────────────────────────────────────────────
 
 def main():
+    from pipeline.logging_util import setup_server_logging
     port = int(os.environ.get("INFERENCE_PORT", 7200))
+    log_path = setup_server_logging("inference")
     print(f"Starting Inference Server on http://localhost:{port}")
+    print(f"  Server logs → {log_path}")
     print(f"  OpenAI API: http://localhost:{port}/v1/chat/completions")
     print(f"  Health:     http://localhost:{port}/api/health")
     print(f"  Load model first: curl -X POST 'http://localhost:{port}/api/manage/load?model_path=mlx-community/Qwen2.5-7B-Instruct-4bit&model_name=my-model'")

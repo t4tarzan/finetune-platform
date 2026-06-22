@@ -41,6 +41,7 @@ Thumbs.db
 # Logs
 *.log
 /tmp/
+logs/
 
 # Mise
 .mise.toml
