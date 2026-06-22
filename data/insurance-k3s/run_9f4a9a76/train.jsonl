@@ -1,0 +1,5 @@
+{"prompt": "Question: Restart the policy-service deployment after a config change", "completion": "kubectl rollout restart deployment/policy-service -n insurance"}
+{"prompt": "Question: Check how much CPU and memory the underwriting-service pod is using", "completion": "kubectl top pod -n insurance -l app=underwriting-service"}
+{"prompt": "Question: Find the current status of all persistent volume claims for the insurance database", "completion": "kubectl get pvc -n insurance"}
+{"prompt": "Question: Port-forward the insurance-db postgres service to localhost 5432 for a backup", "completion": "kubectl port-forward -n insurance svc/insurance-db 5432:5432"}
+{"prompt": "Question: Show me all pods running in the insurance namespace", "completion": "kubectl get pods -n insurance"}

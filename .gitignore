@@ -44,3 +44,7 @@ Thumbs.db
 
 # Mise
 .mise.toml
+
+# Demo video output
+*.mp4
+*.webm

@@ -1,0 +1,2 @@
+{"prompt": "Question: Scale up the claims-service deployment to 5 replicas for open enrollment", "completion": "kubectl scale deployment/claims-service -n insurance --replicas=5"}
+{"prompt": "Question: Describe the underwriting-service deployment to check its resource limits", "completion": "kubectl describe deployment underwriting-service -n insurance"}

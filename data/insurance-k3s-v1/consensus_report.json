@@ -1,0 +1,86 @@
+{
+  "summary": {
+    "total_datapoints": 30,
+    "verified": 9,
+    "rejected": 21,
+    "verification_rate": 0.3,
+    "min_agreement_required": 3,
+    "confidence_threshold": 0.7,
+    "models_used": [
+      "deepseek/deepseek-v4-pro",
+      "Qwen/Qwen3.6-Max-Preview",
+      "moonshotai/Kimi-K2.7-Code",
+      "claude-sonnet-4-6"
+    ]
+  },
+  "adjudication": {
+    "mode": "auto",
+    "domains_detected": {
+      "general": 26,
+      "financial_regulation": 4
+    },
+    "escalated_for_review": 21,
+    "tiebreaker_invoked": 0,
+    "citation_verified": 15
+  },
+  "per_model_agreement": {
+    "deepseek/deepseek-v4-pro": {
+      "total": 28,
+      "agree": 17,
+      "agree_rate": 0.607,
+      "avg_confidence": 0.794
+    },
+    "Qwen/Qwen3.6-Max-Preview": {
+      "total": 29,
+      "agree": 17,
+      "agree_rate": 0.586,
+      "avg_confidence": 0.831
+    },
+    "moonshotai/Kimi-K2.7-Code": {
+      "total": 29,
+      "agree": 15,
+      "agree_rate": 0.517,
+      "avg_confidence": 0.686
+    },
+    "claude-sonnet-4-6": {
+      "total": 29,
+      "agree": 15,
+      "agree_rate": 0.517,
+      "avg_confidence": 0.858
+    }
+  },
+  "rejected_ids": [
+    "gen-2",
+    "gen-1",
+    "gen-5",
+    "gen-9",
+    "gen-8",
+    "gen-11",
+    "gen-14",
+    "gen-12",
+    "gen-16",
+    "gen-18",
+    "gen-21",
+    "gen-19",
+    "gen-22",
+    "gen-23",
+    "gen-24",
+    "gen-25",
+    "gen-26",
+    "gen-28",
+    "gen-29",
+    "gen-27",
+    "gen-30"
+  ],
+  "verified_ids": [
+    "gen-3",
+    "gen-4",
+    "gen-6",
+    "gen-7",
+    "gen-10",
+    "gen-13",
+    "gen-15",
+    "gen-17",
+    "gen-20"
+  ]
+}
