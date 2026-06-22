@@ -33,12 +33,24 @@ Generate datasets → verify via multi-model consensus → fine-tune with MLX Lo
 
 ## Quick Start
 
+### Platform support
+
+The platform runs on **macOS (Apple Silicon)** and **Linux** from a single codebase:
+
+| | Training/inference backend | Serving |
+|---|---|---|
+| **macOS (Apple Silicon)** | MLX (Metal) | Ollama or in-app inference server (:7200) |
+| **Linux / non-Mac** | HuggingFace + PyTorch (CPU, or CUDA if present) | in-app inference server (:7200) |
+
+The backend is selected automatically at runtime (`mlx_available()` — true only with working Apple Metal). `requirements.txt` uses environment markers so platform-native deps (MLX) install **only** on macOS and never block a Linux install. GRPO is currently MLX-only and reports a clear "not available" message on Linux.
+
 ### Prerequisites
 
-- **Apple Silicon Mac** (M1/M2/M3/M4/M5)
+- **macOS (Apple Silicon)** *or* **Linux** (x86_64 / arm64)
 - **Python 3.12+** (recommended: 3.13 via [mise](https://mise.jdx.dev))
-- **[Ollama](https://ollama.com)** (`brew install ollama`)
+- **[Ollama](https://ollama.com)** — `brew install ollama` (macOS) / [install script](https://ollama.com/download) (Linux)
 - **Node.js 22+** (optional, for BigSet dataset generation)
+- **Linux/CPU tip:** install the lighter CPU PyTorch wheel first — `pip install torch --index-url https://download.pytorch.org/whl/cpu`
 
 ### Install & Run
 

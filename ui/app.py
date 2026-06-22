@@ -9,10 +9,12 @@ Provides:
   / — frontend with Chat + Train tabs
 """
 
+import asyncio
 import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from typing import Optional
 
@@ -21,6 +23,50 @@ from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
+
+# Serializes model export (merge loads a full model into RAM). Concurrent exports
+# stack model loads and can OOM-kill the server — non-blocking acquire rejects
+# overlapping requests instead.
+_EXPORT_LOCK = threading.Lock()
+
+
+def _run_export_subprocess(niche: str, adapter_path: str, timeout: int = 900):
+    """Run the export/merge in an isolated subprocess and return (ok, detail).
+
+    Isolation means a heavy merge — or an OOM kill of it — cannot take down the
+    UI server: the worker dies, the parent survives and reports a clean error.
+    Backend (MLX vs HuggingFace) is chosen inside the worker, so this is platform-agnostic.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    venv_python = os.path.join(root, ".venv", "bin", "python")
+    python_bin = venv_python if os.path.exists(venv_python) else sys.executable
+    worker = os.path.join(root, "pipeline", "export_worker.py")
+    payload = json.dumps({"niche": niche, "adapter_path": adapter_path})
+    try:
+        proc = subprocess.run(
+            [python_bin, worker], input=payload + "\n",
+            capture_output=True, text=True, timeout=timeout, cwd=root,
+        )
+    except subprocess.TimeoutExpired:
+        return False, f"Export timed out after {timeout}s."
+    except Exception as e:
+        return False, f"Failed to launch export subprocess: {e}"
+
+    # stdout carries exactly one JSON result line (worker redirects all noise to stderr).
+    result = None
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if line.startswith("{"):
+            try:
+                result = json.loads(line)
+            except json.JSONDecodeError:
+                pass
+    if result is None:
+        tail = (proc.stderr or "").strip()[-300:]
+        return False, f"Export process exited abnormally (code {proc.returncode}). {tail}"
+    if result.get("event") == "complete":
+        return True, result.get("merged_dir", "")
+    return False, result.get("message", "Export failed (see server logs).")
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -347,12 +393,16 @@ def train_status():
 async def train_stop(save: bool = Query(False, description="Save checkpoint before stopping")):
     result = await train_manager.stop_training(save_checkpoint=save)
     # Trigger export if we saved
-    if save and train_manager.current_run:
-        from pipeline.export_gguf import export_model
-        export_model(
-            niche=train_manager.current_run.get("niche", "model"),
-            adapter_path=train_manager.current_run.get("output_dir", "models/adapters/default"),
-        )
+    if save and train_manager.current_run and _EXPORT_LOCK.acquire(blocking=False):
+        try:
+            # Run the (blocking) export subprocess off the event loop.
+            await asyncio.to_thread(
+                _run_export_subprocess,
+                train_manager.current_run.get("niche", "model"),
+                train_manager.current_run.get("output_dir", "models/adapters/default"),
+            )
+        finally:
+            _EXPORT_LOCK.release()
     return result
 
 
@@ -406,9 +456,15 @@ def export_model_endpoint(
     niche: str = Query(...),
     adapter_path: str = Query(...),
 ):
-    from pipeline.export_gguf import export_model
-    export_model(niche=niche, adapter_path=adapter_path, register=True)
-    return {"status": "ok", "niche": niche}
+    if not _EXPORT_LOCK.acquire(blocking=False):
+        raise HTTPException(429, "An export is already running. Please wait for it to finish.")
+    try:
+        ok, detail = _run_export_subprocess(niche, adapter_path)
+        if not ok:
+            raise HTTPException(500, f"Export failed: {detail}")
+        return {"status": "ok", "niche": niche}
+    finally:
+        _EXPORT_LOCK.release()
 
 
 # ── Inference Server Management ───────────────────────────
@@ -1672,7 +1728,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div style="margin-top:20px;display:flex;gap:8px;flex-direction:column;">
           <button class="btn btn-primary" id="ft-start-btn" onclick="startTraining()" disabled style="opacity:0.4;cursor:not-allowed;">▶ Start Training — setup dataset first</button>
           <button class="btn btn-danger" id="ft-stop-btn" onclick="stopTraining()" style="display:none">⏹ Stop Training</button>
-          <button class="btn btn-outline" onclick="exportModel()">⬆ Export & Register with Ollama</button>
+          <button class="btn btn-outline" onclick="exportModel(this)">⬆ Export & Register with Ollama</button>
         </div>
       </div>
 
@@ -1726,6 +1782,9 @@ function switchTab(name, el) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+  // The loss chart sizes its canvas off the (now-visible) container, so it must
+  // be redrawn here — drawing while the tab was display:none captures 0x0.
+  if (name === 'train' && typeof drawLossChart === 'function') drawLossChart();
 }
 
 let datasetReady = false;
@@ -1999,11 +2058,88 @@ function connectTrainingSSE() {
       if (trainingEventSource) trainingEventSource.close();
       // Check status
       fetch('/api/train/status').then(r=>r.json()).then(s => {
-        if (s.status === 'running') connectTrainingSSE();
-        else resetTrainButtons();
-      });
+        if (s.status === 'running') { connectTrainingSSE(); return; }
+        // The run finished (or the connection dropped around the terminal event):
+        // render the final phase/message so the UI doesn't snap back to idle.
+        resetTrainButtons();
+        renderTerminalStatus(s);
+        loadTrainHistory();
+      }).catch(() => resetTrainButtons());
     }, 1000);
   };
+}
+
+// Render the phase/message line for a finished (non-running) run.
+function renderTerminalStatus(s) {
+  if (s.status === 'completed') {
+    document.getElementById('ft-phase').textContent = 'Completed ✓';
+    document.getElementById('ft-message').textContent = 'Final loss: '+(s.final_loss != null ? s.final_loss.toFixed(4) : '?');
+  } else if (s.status === 'error') {
+    document.getElementById('ft-phase').textContent = 'Error ✗';
+    document.getElementById('ft-message').textContent = s.message || 'Unknown error';
+  } else if (s.status === 'stopped') {
+    document.getElementById('ft-phase').textContent = 'Stopped';
+    document.getElementById('ft-message').textContent = s.message || '';
+  }
+}
+
+// Reveal the metrics block and draw the loss curve + metric cards from a run.
+function showTrainMetrics(lossHistory, m) {
+  document.getElementById('train-empty').style.display = 'none';
+  document.getElementById('train-metrics').style.display = '';
+  lossData = (lossHistory || []).map(p => ({ step: p.step, loss: p.loss }));
+  drawLossChart();
+  document.getElementById('m-loss').textContent = m.loss != null ? m.loss.toFixed(4) : '—';
+  document.getElementById('m-lr').textContent = m.lr != null ? m.lr.toExponential(2) : '—';
+  document.getElementById('m-epoch').textContent = m.epoch != null ? m.epoch : '—';
+  document.getElementById('m-eta').textContent = m.eta ? formatDuration(m.eta) : '—';
+  document.getElementById('train-progress').style.width = Math.min(m.pct || 0, 100)+'%';
+}
+
+async function initTrainState() {
+  try {
+    const s = await fetch('/api/train/status').then(r => r.json());
+    if (s.status && s.status !== 'idle') {
+      showTrainMetrics(s.loss_history, {loss: s.loss, lr: s.learning_rate, epoch: s.epoch, eta: s.eta_seconds, pct: s.progress_percent});
+      if (s.status === 'running') {
+        document.getElementById('ft-stop-btn').style.display = '';
+        document.getElementById('ft-phase').textContent = s.phase || 'running';
+        document.getElementById('ft-message').textContent = s.message || '';
+        connectTrainingSSE();
+      } else {
+        renderTerminalStatus(s);
+      }
+      await loadTrainHistory();
+      return;
+    }
+  } catch(e) {}
+  // Idle (e.g. after a server restart): restore the chart from the most recent
+  // run whose loss curve was persisted to history.
+  const runs = await loadTrainHistory();
+  const last = (runs || []).find(r => (r.loss_history || []).length);
+  if (last) {
+    showTrainMetrics(last.loss_history, {loss: last.final_loss, lr: null, epoch: (last.params||{}).epochs, eta: 0, pct: 100});
+    renderTerminalStatus(last);
+  }
+}
+
+async function loadTrainHistory() {
+  try {
+    const res = await fetch('/api/train/history?limit=20');
+    const data = await res.json();
+    const el = document.getElementById('train-history-entries');
+    const runs = data.runs || [];
+    if (!runs.length) { el.innerHTML = '<div class="muted" style="font-size:12px;color:var(--text-secondary)">No past runs yet.</div>'; return runs; }
+    const statusColor = s => s === 'completed' ? 'var(--success)' : s === 'error' ? 'var(--danger)' : s === 'stopped' ? 'var(--warning)' : 'var(--text-secondary)';
+    el.innerHTML = runs.map(r => {
+      const loss = r.final_loss != null ? r.final_loss.toFixed(4) : '—';
+      const when = (r.started_at || '').slice(0,19).replace('T',' ');
+      return '<div class="history-entry"><div class="h-left"><div class="h-niche">'+r.niche+'</div>'
+        + '<div class="h-meta">'+when+' · '+(r.total_steps||0)+' steps · loss '+loss+'</div></div>'
+        + '<div class="h-status" style="background:'+statusColor(r.status)+';color:#0d1117">'+r.status+'</div></div>';
+    }).join('');
+    return runs;
+  } catch(e) { return []; }
 }
 
 function updateTrainingUI(data) {
@@ -2034,6 +2170,7 @@ function updateTrainingUI(data) {
     document.getElementById('ft-message').textContent = 'Final loss: '+(data.final_loss != null ? data.final_loss.toFixed(4) : '?');
     resetTrainButtons();
     loadModels();
+    loadTrainHistory();
     if (trainingEventSource) trainingEventSource.close();
   }
 
@@ -2041,6 +2178,7 @@ function updateTrainingUI(data) {
     document.getElementById('ft-phase').textContent = 'Error ✗';
     document.getElementById('ft-message').textContent = data.message || 'Unknown error';
     resetTrainButtons();
+    loadTrainHistory();
     if (trainingEventSource) trainingEventSource.close();
   }
 }
@@ -2050,6 +2188,7 @@ async function stopTraining() {
   document.getElementById('ft-message').textContent = 'Stopping...';
   await fetch('/api/train/stop?save='+save, {method:'POST'});
   if (save) loadModels();
+  loadTrainHistory();
 }
 
 function resetTrainButtons() {
@@ -2067,13 +2206,26 @@ function resetTrainButtons() {
   document.getElementById('ft-stop-btn').style.display = 'none';
 }
 
-async function exportModel() {
+async function exportModel(btn) {
   const niche = document.getElementById('ft-niche').value;
   const adapterPath = 'models/adapters/'+niche;
-  document.getElementById('ft-message').textContent = 'Exporting model...';
-  await fetch('/api/export?niche='+encodeURIComponent(niche)+'&adapter_path='+encodeURIComponent(adapterPath), {method:'POST'});
-  document.getElementById('ft-message').textContent = 'Export complete!';
-  loadModels();
+  if (btn) { btn.disabled = true; btn.style.opacity = 0.5; }
+  document.getElementById('ft-message').textContent = 'Exporting model… (this can take a minute)';
+  try {
+    const res = await fetch('/api/export?niche='+encodeURIComponent(niche)+'&adapter_path='+encodeURIComponent(adapterPath), {method:'POST'});
+    if (!res.ok) {
+      let msg = 'Export failed ('+res.status+')';
+      try { const j = await res.json(); if (j.detail) msg = 'Export failed: '+j.detail; } catch (e) {}
+      document.getElementById('ft-message').textContent = msg;
+      return;
+    }
+    document.getElementById('ft-message').textContent = 'Export complete!';
+    loadModels();
+  } catch (e) {
+    document.getElementById('ft-message').textContent = 'Export failed: '+e;
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = 1; }
+  }
 }
 
 function formatDuration(seconds) {
@@ -2306,6 +2458,7 @@ loadModels();
 loadLeaderboard();
 loadDocs();
 checkInferenceStatus();
+initTrainState();
 setInterval(loadLeaderboard, 30000);
 setInterval(checkInferenceStatus, 30000);
 

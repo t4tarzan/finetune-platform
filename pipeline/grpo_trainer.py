@@ -17,9 +17,15 @@ import math
 from pathlib import Path
 from typing import Optional
 
-import mlx.core as mx
-import mlx.nn as nn
-import mlx.optimizers as optim
+# MLX is Apple-Silicon only. Guard the import so this subprocess fails gracefully
+# with a clear event on Linux instead of an ImportError traceback. (GRPO has no
+# CPU/HF backend yet — see mlx_available() dispatch in training_manager.)
+try:
+    import mlx.core as mx
+    import mlx.nn as nn
+    import mlx.optimizers as optim
+except ImportError:
+    mx = nn = optim = None
 
 
 def emit(event_type: str, **kwargs):
@@ -33,6 +39,10 @@ def check_stop(stop_file: str) -> bool:
 
 def run(config: dict):
     """Main GRPO training entry point."""
+    if mx is None:
+        emit("error", message="GRPO requires MLX (Apple Silicon) and is not available on this platform.")
+        return
+
     niche = config.get("niche", "default")
     adapter_path = config.get("adapter_path", f"models/adapters/{niche}")
     base_model = config.get("base_model", "mlx-community/Qwen2.5-7B-Instruct-4bit")
