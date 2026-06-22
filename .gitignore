@@ -18,6 +18,11 @@ venv/
 models/adapters/
 models/gguf/
 
+# Per-run datasets / history / DBs (generated locally, not source).
+# Already-tracked example data under data/ is unaffected (gitignore does not
+# untrack), so the built-in example datasets stay in the repo.
+data/
+
 # IDE
 .idea/
 .vscode/

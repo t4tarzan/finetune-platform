@@ -22,6 +22,20 @@ from pipeline.train_qlora import prepare_training_data
 from pipeline.export_gguf import export_model
 
 
+def mlx_available() -> bool:
+    """True only on Apple Silicon with a working MLX/Metal backend.
+
+    On Linux mlx isn't installed, so the import raises ImportError (caught below)
+    and this returns False — training/export dispatch then falls back to the
+    HuggingFace CPU backend.
+    """
+    try:
+        import mlx.core as mx
+        return bool(mx.metal.is_available())
+    except Exception:
+        return False
+
+
 def load_config():
     config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
     with open(config_path) as f:
@@ -100,6 +114,7 @@ class TrainingManager:
             "num_train_examples": 0,
             "started_at": datetime.now().isoformat(),
             "params": params,
+            "loss_history": [],
         }
 
         # Prepare training data if needed
@@ -139,9 +154,10 @@ class TrainingManager:
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             ".venv", "bin", "python",
         )
+        worker_name = "training_worker.py" if mlx_available() else "training_worker_hf.py"
         worker_script = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            "training_worker.py",
+            worker_name,
         )
 
         try:
@@ -214,6 +230,11 @@ class TrainingManager:
                     self.current_run["eta_seconds"] = event.get("eta_seconds", 0)
                     self.current_run["tokens_per_sec"] = event.get("tokens_per_sec", 0)
                     self.current_run["grad_norm"] = event.get("grad_norm")
+                    if event.get("loss") is not None:
+                        self.current_run["loss_history"].append({
+                            "step": event.get("step", 0),
+                            "loss": event.get("loss"),
+                        })
 
                 elif event_type == "complete":
                     self.current_run["status"] = "completed"
@@ -331,6 +352,9 @@ class TrainingManager:
             "started_at": self.current_run.get("started_at"),
             "params": self.current_run.get("params", {}),
             "output_dir": self.current_run.get("output_dir"),
+            # Persist the per-step loss curve so the UI can redraw the chart after
+            # a server restart (current_run is in-memory only and is lost on restart).
+            "loss_history": self.current_run.get("loss_history", []),
         }
 
         # Add to front, limit to 50 entries

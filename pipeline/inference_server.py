@@ -38,7 +38,55 @@ app.add_middleware(
 
 # ── Model registry ─────────────────────────────────────────
 
-_loaded_models: dict[str, dict] = {}  # model_name → {model, tokenizer, config}
+_loaded_models: dict[str, dict] = {}  # model_name → {model, tokenizer, backend, config}
+
+
+def _mlx_available() -> bool:
+    """True only on Apple Silicon with working Metal; False when MLX is unavailable (e.g. Linux)."""
+    try:
+        import mlx.core as mx
+        return bool(mx.metal.is_available())
+    except Exception:
+        return False
+
+
+USE_MLX = _mlx_available()
+
+
+def load_hf_model(model_path: str, model_name: str = None):
+    """Load a HuggingFace model into memory (CPU). Linux counterpart of load_mlx_model."""
+    global _loaded_models
+    name = model_name or os.path.basename(model_path)
+    print(f"Loading HF model '{name}' from {model_path}...")
+    try:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        torch.set_num_threads(max(1, os.cpu_count() or 1))
+        start = time.time()
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path, dtype=torch.float32, trust_remote_code=True,
+        )
+        model.eval()
+        elapsed = time.time() - start
+
+        _loaded_models[name] = {
+            "model": model,
+            "tokenizer": tokenizer,
+            "backend": "hf",
+            "config": {
+                "path": model_path,
+                "loaded_at": time.time(),
+                "load_time_s": round(elapsed, 1),
+            },
+        }
+        print(f"  Loaded in {elapsed:.1f}s")
+        return {"status": "ok", "model": name, "load_time_s": round(elapsed, 1)}
+    except Exception as e:
+        raise HTTPException(500, f"Failed to load HF model: {e}")
 
 
 def load_mlx_model(model_path: str, model_name: str = None):
@@ -58,6 +106,7 @@ def load_mlx_model(model_path: str, model_name: str = None):
         _loaded_models[name] = {
             "model": model,
             "tokenizer": tokenizer,
+            "backend": "mlx",
             "config": {
                 "path": model_path,
                 "loaded_at": time.time(),
@@ -117,7 +166,8 @@ def manage_load(
     model_name: str = Query(None, description="Optional display name"),
 ):
     """Load a model into memory. Keeps it hot until explicitly unloaded or server restart."""
-    return load_mlx_model(model_path, model_name)
+    loader = load_mlx_model if USE_MLX else load_hf_model
+    return loader(model_path, model_name)
 
 
 @app.post("/api/manage/unload")
@@ -184,6 +234,17 @@ def chat_completions(req: ChatRequest):
     model_entry = get_loaded_model(req.model if req.model else None)
     model = model_entry["model"]
     tokenizer = model_entry["tokenizer"]
+    backend = model_entry.get("backend", "mlx")
+
+    if backend == "hf":
+        # Use the model's own chat template (correct ChatML for Qwen, etc.).
+        messages = [{"role": m.role, "content": m.content} for m in req.messages]
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True,
+        )
+        if req.stream:
+            return _stream_hf(model, tokenizer, prompt, req)
+        return _complete_hf(model, tokenizer, prompt, req)
 
     # Format messages into a single prompt
     prompt_parts = []
@@ -212,11 +273,70 @@ def completions(req: CompletionRequest):
     model_entry = get_loaded_model(req.model if req.model else None)
     model = model_entry["model"]
     tokenizer = model_entry["tokenizer"]
+    backend = model_entry.get("backend", "mlx")
+
+    if backend == "hf":
+        if req.stream:
+            return _stream_hf(model, tokenizer, req.prompt, req)
+        return _complete_hf(model, tokenizer, req.prompt, req)
 
     if req.stream:
         return _stream_completion(model, tokenizer, req.prompt, req)
     else:
         return _complete(model, tokenizer, req.prompt, req)
+
+
+def _complete_hf(model, tokenizer, prompt: str, req):
+    """Generate a non-streaming completion with a HuggingFace model on CPU."""
+    import torch
+
+    max_tokens = getattr(req, "max_tokens", 256)
+    temperature = getattr(req, "temperature", 0.7)
+    enc = tokenizer(prompt, return_tensors="pt")
+    start = time.time()
+    with torch.no_grad():
+        out = model.generate(
+            **enc,
+            max_new_tokens=max_tokens,
+            do_sample=temperature > 0,
+            temperature=max(temperature, 1e-5),
+            top_p=getattr(req, "top_p", 0.9),
+            pad_token_id=tokenizer.pad_token_id,
+        )
+    response = tokenizer.decode(out[0][enc["input_ids"].shape[1]:], skip_special_tokens=True)
+    elapsed = time.time() - start
+
+    prompt_tokens = int(enc["input_ids"].shape[1])
+    completion_tokens = int(out.shape[1] - enc["input_ids"].shape[1])
+    return {
+        "id": f"cmpl-{uuid.uuid4().hex[:12]}",
+        "object": "text_completion",
+        "created": int(time.time()),
+        "model": getattr(req, "model", "") or list(_loaded_models.keys())[0],
+        "choices": [{"text": response, "message": {"role": "assistant", "content": response},
+                     "index": 0, "finish_reason": "stop"}],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens,
+            "time_s": round(elapsed, 2),
+        },
+    }
+
+
+def _stream_hf(model, tokenizer, prompt: str, req):
+    """SSE streaming for HF models. Generates the full completion, then emits it
+    over Server-Sent Events so streaming clients get the correct text/event-stream
+    content type (non-incremental — one content chunk, matching _stream_completion's shape)."""
+    result = _complete_hf(model, tokenizer, prompt, req)
+    text = result["choices"][0]["text"]
+
+    async def generate():
+        yield f"data: {json.dumps({'id': result['id'], 'object': 'text_completion', 'created': result['created'], 'choices': [{'text': text, 'index': 0, 'finish_reason': None}]})}\n\n"
+        yield f"data: {json.dumps({'choices': [{'text': '', 'index': 0, 'finish_reason': 'stop'}], 'usage': result['usage']})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 def _complete(model, tokenizer, prompt: str, req):
@@ -237,7 +357,7 @@ def _complete(model, tokenizer, prompt: str, req):
         "id": f"cmpl-{uuid.uuid4().hex[:12]}",
         "object": "text_completion",
         "created": int(time.time()),
-        "model": list(_loaded_models.keys())[0],
+        "model": getattr(req, "model", "") or list(_loaded_models.keys())[0],
         "choices": [{"text": response, "index": 0, "finish_reason": "stop"}],
         "usage": {
             "prompt_tokens": len(tokenizer.encode(prompt)),

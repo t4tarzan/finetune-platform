@@ -19,10 +19,9 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import mlx.core as mx
-from mlx_lm import load, generate
-from mlx_lm.lora import TrainingArgs, train_model, load_dataset, linear_to_lora_layers
-from mlx_lm.tuner.utils import load_adapters
+# NOTE: MLX is Apple-Silicon only. It is imported lazily inside the functions
+# that need it (fine_tune, export_to_gguf) so this module — and prepare_training_data
+# in particular — imports cleanly on Linux, where the HuggingFace backend is used.
 
 
 def load_config():
@@ -53,16 +52,30 @@ def prepare_training_data(
     
     formatted = []
     for row in rows:
+        # Pass through rows that are already in {prompt, completion} form
+        # (e.g. the default data/example_train.jsonl).
+        if "prompt" in row and "completion" in row:
+            formatted.append({
+                "prompt": row["prompt"],
+                "completion": row["completion"],
+            })
+            continue
+
+        # Otherwise expect {question, reference_answer}. Skip unrecognized rows
+        # rather than raising KeyError — an unguarded crash here surfaces as a 500
+        # on /api/train/start (which the UI then mis-renders as a JSON parse error).
+        question = row.get("question")
+        answer = row.get("reference_answer")
+        if not question or answer is None:
+            continue
+
         context = row.get("context", "")
-        question = row["question"]
-        answer = row["reference_answer"]
-        
         # Wrap with context if available
         if context:
             prompt = f"Context: {context}\n\nQuestion: {question}"
         else:
             prompt = f"Question: {question}"
-        
+
         formatted.append({
             "prompt": prompt,
             "completion": answer,
@@ -201,7 +214,10 @@ def fine_tune(
     # Set data path for dataset loader
     args.data = data_dir
     
-    # Load model
+    # Load model (MLX — Apple Silicon only; imported lazily)
+    from mlx_lm import load
+    from mlx_lm.lora import train_model, load_dataset
+
     print("\nLoading model...")
     model, tokenizer = load(args.model, tokenizer_config={"trust_remote_code": True})
     print(f"  Model loaded. Parameters: {sum(p.size for p in model.parameters() if hasattr(p, 'size')):,}")
@@ -267,7 +283,10 @@ def export_to_gguf(
     print(f"Exporting: {niche}")
     print(f"{'='*60}")
     
-    # Load model with adapter
+    # Load model with adapter (MLX — Apple Silicon only; imported lazily)
+    from mlx_lm import load
+    from mlx_lm.tuner.utils import load_adapters
+
     print("Loading model with adapter for merge...")
     model, tokenizer = load(base_model, tokenizer_config={"trust_remote_code": True})
     
