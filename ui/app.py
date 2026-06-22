@@ -618,6 +618,28 @@ def data_register_customer(
         return {"error": str(e)}
 
 
+# ── Dataset Generation (Internal) ─────────────────────────
+
+@app.get("/api/data/generate-from-desc")
+def data_generate_from_desc(
+    niche: str = Query(...),
+    description: str = Query(...),
+    count: int = Query(30),
+):
+    """Generate a dataset from a natural language description using internal models.
+    No external API keys needed. Uses commandcode API models."""
+    from pipeline.data_generator import DataGenerator
+    gen = DataGenerator()
+    result = gen.generate(niche, description, count, run_consensus=True)
+    return result
+
+
+@app.get("/api/data/generate-status")
+def data_generate_status():
+    """Check if generation is in progress (future: SSE streaming for generation)."""
+    return {"status": "idle"}
+
+
 # ── Documentation ──────────────────────────────────────────
 
 DOCS_TREE = [
@@ -1718,23 +1740,29 @@ async function generateDataset() {
   status.style.display = '';
   status.style.background = 'rgba(88,166,255,0.15)';
   status.style.color = 'var(--accent)';
-  status.textContent = 'Generating dataset via BigSet... this may take 2-5 minutes.';
+  status.textContent = 'Generating dataset using internal models (no API keys needed)...';
 
   try {
-    const res = await fetch('/api/data/import?path=' + encodeURIComponent(niche + '_dataset') + '&domain=' + encodeURIComponent(niche), {method:'POST'});
-    // For BigSet, we'd call out to the bigset CLI — for now mark as ready
-    status.style.background = 'rgba(63,185,80,0.15)';
-    status.style.color = 'var(--success)';
-    status.textContent = '✅ Dataset generated: ' + niche + ' (' + desc.slice(0,60) + '...)';
-    document.getElementById('ft-dataset-ready-badge').style.display = '';
-    setDatasetReady(true);
+    const res = await fetch('/api/data/generate-from-desc?niche=' + encodeURIComponent(niche) + '&description=' + encodeURIComponent(desc) + '&count=30');
+    const data = await res.json();
+    if (data.rows_generated > 0) {
+      status.style.background = 'rgba(63,185,80,0.15)';
+      status.style.color = 'var(--success)';
+      status.textContent = '✅ ' + data.rows_generated + ' rows generated, ' + data.verified_count + ' passed consensus';
+      document.getElementById('ft-dataset-ready-badge').style.display = '';
+      setDatasetReady(true);
+    } else {
+      status.style.background = 'rgba(248,81,73,0.15)';
+      status.style.color = 'var(--danger)';
+      status.textContent = '❌ No rows generated. Try a different description.';
+    }
   } catch(e) {
     status.style.background = 'rgba(248,81,73,0.15)';
     status.style.color = 'var(--danger)';
     status.textContent = '❌ Error: ' + e.message;
   }
   btn.disabled = false;
-  btn.textContent = '🔄 Generate Dataset';
+  btn.textContent = '🔄 Generate Dataset (30 rows)';
 }
 
 function setDatasetReady(ready) {

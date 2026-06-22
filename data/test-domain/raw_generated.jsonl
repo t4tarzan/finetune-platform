@@ -1,0 +1,5 @@
+{"question": "What is 15 + 7?", "reference_answer": "The answer is 22.", "context": "Two-digit addition with carrying"}
+{"question": "What is 100 - 37?", "reference_answer": "The answer is 63.", "context": "Three-digit subtraction with borrowing"}
+{"question": "What is the sum of 4, 9, and 6?", "reference_answer": "The answer is 19.", "context": "Adding three single-digit numbers"}
+{"question": "If you have 50 apples and give away 18, how many do you have left?", "reference_answer": "The answer is 32.", "context": "Word problem involving subtraction of two-digit numbers"}
+{"question": "What is 0 + 25?", "reference_answer": "The answer is 25.", "context": "Identity property of addition with zero"}

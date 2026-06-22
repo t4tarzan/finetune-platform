@@ -1,0 +1,4 @@
+{"id": "gen-1", "question": "What is 15 + 7?", "reference_answer": "The answer is 22.", "context": "Two-digit addition with carrying", "metadata": {"source": "generated", "niche": "test-domain"}}
+{"id": "gen-3", "question": "What is the sum of 4, 9, and 6?", "reference_answer": "The answer is 19.", "context": "Adding three single-digit numbers", "metadata": {"source": "generated", "niche": "test-domain"}}
+{"id": "gen-2", "question": "What is 100 - 37?", "reference_answer": "The answer is 63.", "context": "Three-digit subtraction with borrowing", "metadata": {"source": "generated", "niche": "test-domain"}}
+{"id": "gen-4", "question": "If you have 50 apples and give away 18, how many do you have left?", "reference_answer": "The answer is 32.", "context": "Word problem involving subtraction of two-digit numbers", "metadata": {"source": "generated", "niche": "test-domain"}}
