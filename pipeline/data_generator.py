@@ -25,6 +25,65 @@ import time
 import re
 from dataclasses import dataclass, field, asdict
 from typing import Optional
+from pathlib import Path
+
+# ── Provider Detection ────────────────────────────────────
+
+def _load_env():
+    """Load .env file if it exists."""
+    env_path = Path(__file__).parent.parent / ".env"
+    if env_path.exists():
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, val = line.split("=", 1)
+                    os.environ.setdefault(key.strip(), val.strip())
+
+
+def _cmd_available() -> bool:
+    """Check if commandcode CLI is available and authenticated."""
+    try:
+        result = subprocess.run(
+            ["cmd", "status"],
+            capture_output=True, text=True, timeout=5,
+        )
+        return result.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+def _bigset_available() -> bool:
+    """Check if BigSet CLI is available and API keys are set."""
+    try:
+        subprocess.run(["bigset", "list"], capture_output=True, timeout=5)
+        return True
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
+def _ollama_available() -> bool:
+    """Check if Ollama is running."""
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex(("127.0.0.1", 11434))
+    sock.close()
+    return result == 0
+
+
+# Load env on import
+_load_env()
+
+
+AVAILABLE_PROVIDERS = {}
+if _cmd_available():
+    AVAILABLE_PROVIDERS["cmd"] = "commandcode API (30+ models)"
+if _bigset_available():
+    AVAILABLE_PROVIDERS["bigset"] = "BigSet (web research)"
+if _ollama_available():
+    AVAILABLE_PROVIDERS["ollama"] = "Ollama (local models)"
+
+DEFAULT_PROVIDER = "cmd" if "cmd" in AVAILABLE_PROVIDERS else list(AVAILABLE_PROVIDERS.keys())[0] if AVAILABLE_PROVIDERS else None
 
 import yaml
 
@@ -72,20 +131,53 @@ Respond in JSON format ONLY with a JSON array of objects:
 
 
 class DataGenerator:
-    """Generates training data using internal models — no external API keys needed."""
+    """Generates training data using available providers — auto-detects what's available."""
 
     def __init__(self, config: Optional[dict] = None):
         self.config = config or load_config()
         self.models = self.config.get("consensus_models", [])
-        # Use the first consensus model for generation
-        self.gen_model = self.models[0] if self.models else "claude-sonnet-4-6"
-        self.gen_model = self.config.get("data_generation", {}).get("model", self.gen_model)
+        self.gen_model = self.models[0] if self.models else "deepseek/deepseek-v4-pro"
+
+        # Detect available providers
+        self.provider = DEFAULT_PROVIDER
+        self.providers_available = AVAILABLE_PROVIDERS
+
+        if not self.provider:
+            print("[WARN] No generation provider available.")
+            print("  Install: cmd login (commandcode API) or set API keys in .env")
+            print("  See .env.example for details")
 
     def _query_model(self, model: str, prompt: str, timeout: int = 60) -> Optional[str]:
-        """Query a model via cmd -p and return raw response."""
+        """Query a model via available provider."""
+        if self.provider == "cmd":
+            return self._query_cmd(model, prompt, timeout)
+        elif self.provider == "bigset":
+            print("  [WARN] BigSet generation not implemented yet")
+            return None
+        elif self.provider == "ollama":
+            return self._query_ollama(model, prompt, timeout)
+        return None
+
+    def _query_cmd(self, model: str, prompt: str, timeout: int = 60) -> Optional[str]:
+        """Query a model via cmd -p."""
         try:
             result = subprocess.run(
                 ["cmd", "-t", "-m", model, "-p", prompt],
+                capture_output=True, text=True, timeout=timeout,
+            )
+            if result.returncode == 0:
+                return result.stdout.strip()
+            print(f"    [WARN] cmd returned code {result.returncode}")
+            return None
+        except Exception as e:
+            print(f"    [WARN] cmd error: {e}")
+            return None
+
+    def _query_ollama(self, model: str, prompt: str, timeout: int = 120) -> Optional[str]:
+        """Query a local Ollama model."""
+        try:
+            result = subprocess.run(
+                ["ollama", "run", model, prompt],
                 capture_output=True, text=True, timeout=timeout,
             )
             if result.returncode == 0:

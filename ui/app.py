@@ -636,8 +636,30 @@ def data_generate_from_desc(
 
 @app.get("/api/data/generate-status")
 def data_generate_status():
-    """Check if generation is in progress (future: SSE streaming for generation)."""
-    return {"status": "idle"}
+    """Check available generation providers."""
+    from pipeline.data_generator import AVAILABLE_PROVIDERS, DEFAULT_PROVIDER, _cmd_available, _bigset_available, _ollama_available
+
+    available = {}
+    try:
+        from pipeline.data_generator import AVAILABLE_PROVIDERS as ap
+        available = dict(ap)
+    except Exception:
+        pass
+
+    # Re-check
+    if _cmd_available():
+        available["cmd"] = "commandcode API"
+    if _bigset_available():
+        available["bigset"] = "BigSet (needs .env keys)"
+    if _ollama_available():
+        available["ollama"] = "Ollama (local)"
+
+    return {
+        "status": "idle",
+        "providers_available": available,
+        "default_provider": DEFAULT_PROVIDER or "none",
+        "note": "No API keys needed — uses commandcode API by default. Set .env for BigSet/OpenRouter fallback." if DEFAULT_PROVIDER == "cmd" else "Install commandcode or set .env API keys to generate datasets.",
+    }
 
 
 # ── Documentation ──────────────────────────────────────────
@@ -1569,10 +1591,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div class="form-group">
           <label>Dataset Type</label>
           <select id="ft-dataset-type">
-            <option value="local">Local JSONL (verified_train.jsonl)</option>
-            <option value="bigset">BigSet (generate from description)</option>
+            <option value="local">Local JSONL (point to existing file)</option>
+            <option value="bigset">Auto-Generate (from description)</option>
           </select>
-          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Local = point to existing verified JSONL. BigSet = auto-generate from description.</span>
+          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Local = use your own JSONL file. Auto-Generate = creates data using available models.</span>
         </div>
         <div class="form-group" id="ft-data-path-group">
           <label>Verified Data Path</label>
@@ -1583,9 +1605,10 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           </div>
         </div>
         <div class="form-group" id="ft-desc-group" style="display:none">
-          <label>Dataset Description (for BigSet)</label>
+          <label>Dataset Description</label>
           <input id="ft-desc" placeholder="AI startups in SF hiring engineers..." />
-          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Describe what data you want. BigSet will research the web and build a structured dataset.</span>
+          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Describe what data you want. The platform generates it using available models — no API keys needed.</span>
+          <div id="ft-provider-info" style="font-size:10px;color:var(--success);margin-top:4px;"></div>
           <div style="display:flex;gap:6px;margin-top:6px;">
             <button id="ft-gen-btn" onclick="generateDataset()" style="flex:1;padding:6px 12px;font-size:11px;background:var(--success);color:#fff;border:none;border-radius:4px;cursor:pointer;">🔄 Generate Dataset</button>
           </div>
@@ -1714,13 +1737,30 @@ function useLocalDataset() {
   setDatasetReady(true);
 }
 
-document.getElementById('ft-dataset-type').addEventListener('change', function() {
+document.getElementById('ft-dataset-type').addEventListener('change', async function() {
   const isBigset = this.value === 'bigset';
   document.getElementById('ft-data-path-group').style.display = isBigset ? 'none' : '';
   document.getElementById('ft-desc-group').style.display = isBigset ? '' : 'none';
   document.getElementById('ft-dataset-status').style.display = 'none';
   document.getElementById('ft-dataset-ready-badge').style.display = 'none';
   setDatasetReady(false);
+
+  // Check available providers
+  if (isBigset) {
+    try {
+      const res = await fetch('/api/data/generate-status');
+      const data = await res.json();
+      const info = document.getElementById('ft-provider-info');
+      const providers = Object.keys(data.providers_available || {});
+      if (providers.length > 0) {
+        info.textContent = '✅ Using: ' + providers.join(', ') + ' — no config needed';
+        info.style.color = 'var(--success)';
+      } else {
+        info.textContent = '⚠️ No generation provider found. See .env.example to configure.';
+        info.style.color = 'var(--warning)';
+      }
+    } catch(e) {}
+  }
 });
 
 document.getElementById('ft-data-path').addEventListener('input', function() {
