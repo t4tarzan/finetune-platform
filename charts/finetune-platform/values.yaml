@@ -57,8 +57,7 @@ persistence:
     size: 20Gi              # LoRA adapters + merged models (GB each)
   data:
     size: 5Gi               # datasets + training history
-  hfCache:
-    size: 30Gi              # base-model downloads from Hugging Face (GB)
+  # No hf-cache PVC: base models are baked into the image layer (air-gapped).
   logs:
     size: 1Gi
 

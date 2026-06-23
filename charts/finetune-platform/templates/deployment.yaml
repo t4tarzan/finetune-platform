@@ -30,36 +30,9 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.persistence.enabled }}
-      initContainers:
-        # Seed the (empty) data PVC with the demo datasets baked into the image, so
-        # they appear in the Train dataset dropdown. Mounts the PVC at /seed (NOT over
-        # /app/data) so the image's bundled files are visible to copy. cp -n keeps any
-        # datasets a user already added across restarts.
-        - name: seed-datasets
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command:
-            - sh
-            - -c
-            - |
-              # Seed bundled datasets into the data PVC and the bundled SRE adapter
-              # into the models PVC (PVCs overlay /app/*, so copy the baked files in).
-              mkdir -p /seed-data/sre-pods /seed-data/sre-tables /seed-data/sre-tables-train /seed-models/adapters
-              cp -n /app/data/sre-pods/*.jsonl /seed-data/sre-pods/ 2>/dev/null || true
-              cp -n /app/data/example_train.jsonl /seed-data/ 2>/dev/null || true
-              cp -n /app/data/sre-tables/*.csv /seed-data/sre-tables/ 2>/dev/null || true
-              cp -n /app/data/sre-tables-train/*.jsonl /seed-data/sre-tables-train/ 2>/dev/null || true
-              if [ -d /app/models/adapters/sre-assistant ] && [ ! -d /seed-models/adapters/sre-assistant ]; then
-                cp -r /app/models/adapters/sre-assistant /seed-models/adapters/ 2>/dev/null || true
-              fi
-              echo "seeded:"; ls -R /seed-data 2>/dev/null | head -20; ls /seed-models/adapters 2>/dev/null
-          volumeMounts:
-            - name: data
-              mountPath: /seed-data
-            - name: models
-              mountPath: /seed-models
-      {{- end }}
+      # No init container: serve.sh seeds the bundled datasets + adapter from
+      # /app/_bundled into the data/models volumes on first boot (same path used by
+      # docker compose), so the seed logic is unified across local and cluster.
       containers:
         - name: platform
           {{- if not .Values.image.repository }}
@@ -124,8 +97,6 @@ spec:
               mountPath: /app/data
             - name: logs
               mountPath: /app/logs
-            - name: hfcache
-              mountPath: /root/.cache/huggingface
             {{- end }}
         {{- if .Values.ollama.enabled }}
         - name: ollama
@@ -151,9 +122,6 @@ spec:
         - name: logs
           persistentVolumeClaim:
             claimName: {{ include "finetune-platform.fullname" . }}-logs
-        - name: hfcache
-          persistentVolumeClaim:
-            claimName: {{ include "finetune-platform.fullname" . }}-hfcache
         {{- end }}
         {{- if .Values.ollama.enabled }}
         - name: ollama

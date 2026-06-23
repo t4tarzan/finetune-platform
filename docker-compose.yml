@@ -21,8 +21,11 @@
 
 services:
   platform:
-    build: .
-    image: finetune-platform:latest
+    # Default: pull the self-contained public appliance image (models + data + the
+    # pre-trained sre-assistant adapter all baked in). `docker compose up` just works.
+    # To build your own instead, uncomment `build: .` and run `docker compose build`.
+    image: ghcr.io/t4tarzan/finetune-platform:latest
+    # build: .
     container_name: finetune-platform
     init: true                      # tini as PID 1 — clean signal handling / reaping
     ports:
@@ -41,11 +44,12 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
-      - ./data:/app/data            # datasets + training history (persisted)
-      - ./models:/app/models        # adapters + merged models (persisted)
-      - ./benchmarks:/app/benchmarks
-      - ./logs:/app/logs            # training / export / server logs (persisted)
-      - hf-cache:/root/.cache/huggingface   # base-model downloads persist across runs
+      # Named volumes so the bundled data/models seed (and any rows a user appends)
+      # persist across restarts. serve.sh seeds these from /app/_bundled on first boot.
+      # No HF-cache mount on purpose — the base models are baked into the image layer.
+      - ftp-data:/app/data           # datasets + DuckDB + training history
+      - ftp-models:/app/models       # adapters + merged/served models
+      - ftp-logs:/app/logs           # training / export / server logs
     restart: unless-stopped
     healthcheck:
       # Probe both services — a dead inference server (:7200) must mark the container
@@ -96,5 +100,7 @@ services:
     restart: "no"
 
 volumes:
-  hf-cache:
+  ftp-data:
+  ftp-models:
+  ftp-logs:
   ollama-data:
