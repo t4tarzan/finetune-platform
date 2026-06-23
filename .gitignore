@@ -55,3 +55,9 @@ logs/
 # Demo video output
 *.mp4
 *.webm
+
+# Node deps + browser test artifacts (Playwright demo recording)
+node_modules/
+.playwright-mcp/
+# Runtime leaderboard output
+benchmarks/

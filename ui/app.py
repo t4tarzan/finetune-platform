@@ -695,7 +695,8 @@ def list_datasets():
 def list_adapters():
     """List LoRA adapters already on disk (for the 'continue from fine-tuned'
     / incremental-retraining picker). An adapter is a dir under models/adapters
-    containing adapters.safetensors."""
+    containing an adapter weights file — MLX writes adapters.safetensors, the
+    HuggingFace/CPU backend writes adapter_model.safetensors."""
     base = os.path.join(
         config.get("paths", {}).get("models", "models"), "adapters"
     )
@@ -703,9 +704,44 @@ def list_adapters():
     if os.path.isdir(base):
         for d in sorted(os.listdir(base)):
             full = os.path.join(base, d)
-            if os.path.isfile(os.path.join(full, "adapters.safetensors")):
+            if (os.path.isfile(os.path.join(full, "adapters.safetensors"))
+                    or os.path.isfile(os.path.join(full, "adapter_model.safetensors"))):
                 adapters.append({"niche": d, "path": full})
     return {"adapters": adapters}
+
+
+@app.get("/api/platform")
+def platform_info():
+    """Report the active training backend so the UI offers base models that actually
+    run here. MLX (Apple Silicon, native) loads 4-bit quantized models via Metal; the
+    HuggingFace/CPU backend (Linux, including Docker) downloads full-precision (fp32)
+    HuggingFace models — 4-bit/MLX ids don't apply and are silently mapped to a CPU
+    default, so we must not offer them here."""
+    from pipeline.training_manager import mlx_available
+    if mlx_available():
+        return {
+            "backend": "mlx",
+            "precision": "4-bit quantized (MLX / Apple Silicon)",
+            "default": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+            "note": "4-bit quantized models, loaded with MLX on Apple Silicon (Metal).",
+            "models": [
+                {"id": "mlx-community/Qwen2.5-7B-Instruct-4bit", "label": "Qwen2.5-7B (4-bit) — recommended"},
+                {"id": "mlx-community/Qwen2.5-0.5B-Instruct-4bit", "label": "Qwen2.5-0.5B (4-bit) — fast prototyping"},
+                {"id": "mlx-community/Qwen2.5-1.5B-Instruct-4bit", "label": "Qwen2.5-1.5B (4-bit)"},
+                {"id": "mlx-community/Mistral-7B-Instruct-v0.3-4bit", "label": "Mistral-7B (4-bit)"},
+                {"id": "mlx-community/Llama-3.2-3B-Instruct-4bit", "label": "Llama 3.2-3B (4-bit)"},
+            ],
+        }
+    return {
+        "backend": "hf-cpu",
+        "precision": "full precision fp32 (HuggingFace / CPU)",
+        "default": "Qwen/Qwen2.5-0.5B-Instruct",
+        "note": "Downloaded from HuggingFace and trained in full precision (fp32) on CPU — no quantization. (4-bit / MLX models apply only to a native Apple-Silicon deployment.)",
+        "models": [
+            {"id": "Qwen/Qwen2.5-0.5B-Instruct", "label": "Qwen2.5-0.5B-Instruct — fast (default)"},
+            {"id": "Qwen/Qwen2.5-1.5B-Instruct", "label": "Qwen2.5-1.5B-Instruct — slower, higher quality"},
+        ],
+    }
 
 
 @app.get("/api/train/niches")
@@ -905,12 +941,14 @@ def inference_load_model(
     """Load a model into the running inference server."""
     import urllib.request
     port = config.get("ports", {}).get("inference_api", 7200)
-    url = f"http://127.0.0.1:{port}/api/manage/load?model_path={model_path}"
-    if model_name:
-        url += f"&model_name={model_name}"
+    import urllib.parse
+    qs = urllib.parse.urlencode({"model_path": model_path, **({"model_name": model_name} if model_name else {})})
+    url = f"http://127.0.0.1:{port}/api/manage/load?{qs}"
     try:
-        resp = urllib.request.urlopen(url, timeout=120)
-        return json.loads(resp.read())
+        # manage/load is a POST endpoint — send an empty POST body, not a GET.
+        req = urllib.request.Request(url, data=b"", method="POST")
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            return json.loads(resp.read())
     except Exception as e:
         return {"error": str(e)}
 
@@ -920,10 +958,12 @@ def inference_unload_model(model_name: str = Query(...)):
     """Unload a model from the inference server."""
     import urllib.request
     port = config.get("ports", {}).get("inference_api", 7200)
-    url = f"http://127.0.0.1:{port}/api/manage/unload?model_name={model_name}"
+    import urllib.parse
+    url = f"http://127.0.0.1:{port}/api/manage/unload?{urllib.parse.urlencode({'model_name': model_name})}"
     try:
-        resp = urllib.request.urlopen(url, timeout=10)
-        return json.loads(resp.read())
+        req = urllib.request.Request(url, data=b"", method="POST")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
     except Exception as e:
         return {"error": str(e)}
 
@@ -1940,7 +1980,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div id="inf-models-list" style="font-size:11px;"></div>
       </div>
       <div style="margin-top:6px;">
-        <input id="inf-model-path" value="mlx-community/Qwen2.5-7B-Instruct-4bit" placeholder="HF model path" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;" />
+        <input id="inf-model-path" value="Qwen/Qwen2.5-0.5B-Instruct" placeholder="HF id or local merged-model dir" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;" />
         <button onclick="loadInferenceModel()" style="margin-top:4px;padding:4px 8px;font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;width:100%;">⬇ Load Model</button>
       </div>
     </div>
@@ -2059,15 +2099,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <!-- Step 2: Model -->
         <div class="form-section"><h4>🤖 Base Model</h4></div>
         <div class="form-group">
-          <label>Base Model <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">— 7B recommended starting point</span></label>
+          <label>Base Model <span id="ft-base-model-hint" style="font-size:10px;color:var(--text-secondary);font-weight:400;">— detecting backend…</span></label>
           <select id="ft-base-model">
-            <option value="mlx-community/Qwen2.5-7B-Instruct-4bit">Qwen2.5-7B (4-bit) — recommended</option>
-            <option value="mlx-community/Qwen2.5-0.5B-Instruct-4bit">Qwen2.5-0.5B (4-bit) — fast prototyping</option>
-            <option value="mlx-community/Qwen2.5-1.5B-Instruct-4bit">Qwen2.5-1.5B (4-bit)</option>
-            <option value="mlx-community/Mistral-7B-Instruct-v0.3-4bit">Mistral-7B (4-bit)</option>
-            <option value="mlx-community/Llama-3.2-3B-Instruct-4bit">Llama 3.2-3B (4-bit)</option>
+            <option value="Qwen/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B-Instruct</option>
           </select>
-          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Larger models = better accuracy, more memory. 7B needs ~8GB for training.</span>
+          <span id="ft-base-model-note" style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Loading available base models for this deployment…</span>
         </div>
 
         <div class="form-group">
@@ -2180,8 +2216,17 @@ function switchTab(name, el) {
 let datasetReady = false;
 
 function useLocalDataset() {
-  const path = document.getElementById('ft-data-path').value;
-  if (!path) { alert('Enter a dataset path first.'); return; }
+  let path = document.getElementById('ft-data-path').value.trim();
+  // Fall back to the dropdown selection: re-picking the already-selected option
+  // fires no 'change' event, so pickDataset() may not have copied it into the field.
+  if (!path) {
+    const sel = document.getElementById('ft-dataset-pick');
+    if (sel && sel.value) {
+      path = sel.value;
+      document.getElementById('ft-data-path').value = path;
+    }
+  }
+  if (!path) { alert('Pick a dataset from the dropdown, or type a path first.'); return; }
   document.getElementById('ft-dataset-ready-badge').style.display = '';
   setDatasetReady(true);
 }
@@ -2483,6 +2528,41 @@ async function loadDatasets() {
       o.textContent = d.label + (d.rows ? ' (' + d.rows + ' rows)' : '');
       sel.appendChild(o);
     });
+  } catch (e) { console.error(e); }
+}
+
+// Populate the base-model picker from the ACTIVE backend (/api/platform): MLX
+// (Apple Silicon) offers 4-bit quantized models; the HuggingFace/CPU backend offers
+// full-precision HF models. Avoids listing MLX-only 4-bit ids that don't run on CPU.
+async function loadBaseModels() {
+  try {
+    const p = await (await fetch('/api/platform')).json();
+    const sel = document.getElementById('ft-base-model');
+    if (sel && Array.isArray(p.models) && p.models.length) {
+      const keep = sel.value;
+      sel.innerHTML = '';
+      p.models.forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.id; o.textContent = m.label;
+        sel.appendChild(o);
+      });
+      sel.value = (p.models.some(m => m.id === keep) ? keep : (p.default || p.models[0].id));
+    }
+    const hint = document.getElementById('ft-base-model-hint');
+    if (hint) hint.textContent = p.backend === 'mlx'
+      ? '— Apple Silicon · MLX · 4-bit quantized'
+      : '— CPU · HuggingFace · full precision (fp32)';
+    const note = document.getElementById('ft-base-model-note');
+    if (note) note.textContent = p.note || '';
+    // Same backend-awareness for the sidebar "Load Model" bar: its old default was an
+    // MLX 4-bit id the HF inference server (:7200) can't load on Linux/CPU.
+    const inf = document.getElementById('inf-model-path');
+    if (inf) {
+      inf.value = p.default || inf.value;
+      inf.placeholder = p.backend === 'mlx'
+        ? 'MLX model id or a local merged-model dir'
+        : 'HF id (e.g. Qwen/Qwen2.5-0.5B-Instruct) or a local merged-model dir';
+    }
   } catch (e) { console.error(e); }
 }
 
@@ -3053,6 +3133,7 @@ loadLeaderboard();
 loadDocs();
 loadAdapters();
 loadDatasets();
+loadBaseModels();
 checkInferenceStatus();
 initTrainState();
 setInterval(loadLeaderboard, 30000);
