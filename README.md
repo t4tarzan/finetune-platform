@@ -51,7 +51,19 @@ The backend is selected automatically at runtime (`mlx_available()` — true onl
 | **Native** | `make serve` | **MLX/Metal on Apple Silicon**, HuggingFace/CPU on Linux |
 | **Docker** | `make docker-up` (or `docker compose up -d --build`) | **HuggingFace/CPU on every host** |
 
-Both start the web UI (`:7100`) and inference server (`:7200`) together.
+Both start the web UI (`:7100`) and inference server (`:7200`) together. Your
+fine-tuned models always appear in the chat picker (served by `:7200`).
+
+**Ollama (base-model chat) with Docker — your choice:**
+
+| | Command | Ollama |
+|---|---|---|
+| **Host Ollama** (default) | `make docker-up` | uses an Ollama running on your machine |
+| **Bundled Ollama** (self-contained) | `make docker-up-ollama` | runs Ollama in a container and auto-pulls `qwen2.5:0.5b` |
+
+Pull a different/extra set into the bundled Ollama with
+`OLLAMA_PULL_MODELS="qwen2.5:0.5b qwen2.5:7b" make docker-up-ollama`. If no Ollama is
+reachable, base models simply don't list — fine-tuned models still do.
 
 > ⚠️ **Docker never uses MLX/Metal — even on a Mac.** Docker containers run a Linux
 > VM with no access to Apple's Metal GPU, so a container always uses the CPU backend.

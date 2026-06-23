@@ -6,9 +6,18 @@
 # for the host architecture. For MLX/Metal acceleration on Apple Silicon, run
 # bare-metal with `make run` instead.
 #
-#   docker compose up -d --build     # build + start (or: make docker-up)
+# Ollama (base-model chat) — two choices:
+#   A) Host Ollama (default): platform talks to an Ollama running on your machine.
+#        docker compose up -d --build                       # or: make docker-up
+#   B) Bundled Ollama container (self-contained): enable the `ollama` profile and
+#      point the platform at it. A base model (qwen2.5:0.5b by default) is pulled
+#      automatically at deploy time; override with OLLAMA_PULL_MODELS.
+#        OLLAMA_HOST=http://ollama:11434 \
+#          docker compose --profile ollama up -d --build    # or: make docker-up-ollama
+#        OLLAMA_PULL_MODELS="qwen2.5:0.5b qwen2.5:7b" make docker-up-ollama   # custom set
+#
 #   docker compose logs -f           # follow logs
-#   docker compose down              # stop      (or: make docker-down)
+#   docker compose down              # stop (both modes; or: make docker-down)
 
 services:
   platform:
@@ -23,10 +32,12 @@ services:
       - PORT=7100
       - INFERENCE_PORT=7200
       - HF_HOME=/root/.cache/huggingface
-      # Reach an Ollama running on the host (for base-model chat). Works on macOS
-      # Docker Desktop and, via the host-gateway alias below, on Linux. If you don't
-      # run Ollama, base models simply don't appear — fine-tuned models still do.
-      - OLLAMA_HOST=http://host.docker.internal:11434
+      # Where to reach Ollama for base-model chat. Default = an Ollama on the host
+      # (works on macOS Docker Desktop and, via the host-gateway alias below, on
+      # Linux). Override to http://ollama:11434 to use the bundled `ollama` service.
+      # If no Ollama is reachable, base models just don't appear — fine-tuned models
+      # still do.
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -43,5 +54,41 @@ services:
       retries: 5
       start_period: 60s
 
+  # Optional bundled Ollama — only starts with `--profile ollama` (make docker-up-ollama).
+  # Use this for a fully self-contained deployment instead of a host Ollama.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: finetune-ollama
+    profiles: ["ollama"]
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama   # pulled models persist across runs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  # One-shot: pull base model(s) into the bundled Ollama at deploy time so it isn't
+  # empty. Override the list with OLLAMA_PULL_MODELS (space-separated), e.g.
+  #   OLLAMA_PULL_MODELS="qwen2.5:0.5b qwen2.5:7b" make docker-up-ollama
+  # Pulled models persist in the ollama-data volume, so this is a no-op on later runs.
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: finetune-ollama-pull
+    profiles: ["ollama"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_PULL_MODELS=${OLLAMA_PULL_MODELS:-qwen2.5:0.5b}
+    entrypoint: ["/bin/sh", "-c", "for m in $$OLLAMA_PULL_MODELS; do echo \"==> pulling $$m\"; ollama pull \"$$m\"; done"]
+    restart: "no"
+
 volumes:
   hf-cache:
+  ollama-data:

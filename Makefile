@@ -1,4 +1,4 @@
-.PHONY: install run serve train export clean docker-up docker-down
+.PHONY: install run serve train export clean docker-up docker-up-ollama docker-down
 
 VENV = .venv/bin
 
@@ -32,11 +32,18 @@ clean:
 	rm -rf benchmarks/*.json
 	rm -rf __pycache__ pipeline/__pycache__
 
+# Platform only — uses an Ollama running on the host (if any) for base-model chat.
 docker-up:
 	docker compose up -d --build
 
+# Platform + a bundled Ollama container (fully self-contained). A base model
+# (qwen2.5:0.5b) is auto-pulled at deploy time; override with OLLAMA_PULL_MODELS, e.g.
+#   OLLAMA_PULL_MODELS="qwen2.5:0.5b qwen2.5:7b" make docker-up-ollama
+docker-up-ollama:
+	OLLAMA_HOST=http://ollama:11434 docker compose --profile ollama up -d --build
+
 docker-down:
-	docker compose down
+	docker compose --profile ollama down
 
 lint:
 	$(VENV)/pip install ruff
