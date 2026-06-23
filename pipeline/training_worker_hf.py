@@ -76,8 +76,22 @@ def run(config: dict):
 
     base_model = resolve_model_id(requested_model)
 
+    # Incremental retraining: continue from a previously trained adapter instead of
+    # a fresh LoRA. We load it onto the exact base it was trained on (recorded in
+    # base_model.txt) so the weights line up.
+    resume_adapter = config.get("resume_adapter", "") or ""
+    resume_valid = bool(resume_adapter) and os.path.exists(
+        os.path.join(resume_adapter, "adapter_config.json"))
+    if resume_valid:
+        marker = os.path.join(resume_adapter, "base_model.txt")
+        if os.path.exists(marker):
+            recorded = open(marker).read().strip()
+            if recorded:
+                base_model = recorded
+
     emit("status", phase="initializing",
-         message=f"CPU training. base_model={base_model} (requested: {requested_model or 'default'})")
+         message=f"CPU training. base_model={base_model} (requested: {requested_model or 'default'})"
+                 + (f", resuming from {resume_adapter}" if resume_valid else ""))
 
     if check_stop(stop_file):
         emit("status", phase="stopped", message="Training cancelled before start")
@@ -108,7 +122,7 @@ def run(config: dict):
             AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments,
             DataCollatorForLanguageModeling, TrainerCallback,
         )
-        from peft import LoraConfig, get_peft_model
+        from peft import LoraConfig, get_peft_model, PeftModel
         # Keep stdout clean: only our JSON events should reach the manager.
         transformers.logging.set_verbosity_error()
         transformers.logging.disable_progress_bar()
@@ -158,11 +172,17 @@ def run(config: dict):
     # --- LoRA ---
     emit("status", phase="configuring", message="Applying LoRA adapter")
     try:
-        peft_config = LoraConfig(
-            r=lora_rank, lora_alpha=lora_alpha, lora_dropout=0.0,
-            target_modules=["q_proj", "v_proj"], task_type="CAUSAL_LM", bias="none",
-        )
-        model = get_peft_model(model, peft_config)
+        if resume_valid:
+            # Load the previous adapter as trainable and keep fine-tuning it.
+            model = PeftModel.from_pretrained(model, resume_adapter, is_trainable=True)
+            emit("status", phase="lora_resumed",
+                 message=f"Continuing training from adapter: {resume_adapter}")
+        else:
+            peft_config = LoraConfig(
+                r=lora_rank, lora_alpha=lora_alpha, lora_dropout=0.0,
+                target_modules=["q_proj", "v_proj"], task_type="CAUSAL_LM", bias="none",
+            )
+            model = get_peft_model(model, peft_config)
         trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
         total = sum(p.numel() for p in model.parameters())
         emit("status", phase="lora_configured",
