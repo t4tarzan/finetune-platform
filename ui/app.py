@@ -18,7 +18,7 @@ import threading
 import time
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -691,6 +691,87 @@ def list_niches():
                     "path": full,
                 })
     return {"niches": niches}
+
+
+@app.post("/api/data/upload-csv")
+async def upload_csv(request: Request, niche: str = Query(..., description="Dataset / niche name (folder)")):
+    """
+    Upload a CSV dataset, convert it to the training schema, and save it as
+    data/<niche>/verified_train.jsonl (ready for the normal training flow).
+
+    The CSV must have a header row with ONE of these column sets:
+      - question, reference_answer  (optional: context)   ← canonical Q&A
+      - prompt, completion                                ← raw LM pairs
+    Column names are matched case-insensitively. Rows missing the required
+    fields are skipped. Send the raw CSV bytes as the request body.
+    """
+    import csv as _csv
+    import io as _io
+    import re as _re
+
+    if not _re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", niche or ""):
+        raise HTTPException(400, "Invalid niche name. Use alphanumeric, hyphens, or underscores.")
+
+    raw = await request.body()
+    if not raw:
+        raise HTTPException(400, "Empty upload. Send the CSV file as the request body.")
+    try:
+        text = raw.decode("utf-8-sig")  # tolerate a BOM from Excel exports
+    except UnicodeDecodeError:
+        raise HTTPException(400, "CSV must be UTF-8 encoded.")
+
+    reader = _csv.DictReader(_io.StringIO(text))
+    if not reader.fieldnames:
+        raise HTTPException(400, "CSV has no header row.")
+
+    # Case-insensitive header → actual column name map.
+    cols = {(h or "").strip().lower(): h for h in reader.fieldnames}
+    if "question" in cols and "reference_answer" in cols:
+        schema, q, a, ctx = "qa", cols["question"], cols["reference_answer"], cols.get("context")
+    elif "prompt" in cols and "completion" in cols:
+        schema, q, a, ctx = "prompt_completion", cols["prompt"], cols["completion"], None
+    else:
+        raise HTTPException(
+            400,
+            "CSV header must contain either 'question' + 'reference_answer' (optional 'context'), "
+            "or 'prompt' + 'completion'. Found: " + ", ".join(reader.fieldnames),
+        )
+
+    written, skipped = [], 0
+    for row in reader:
+        question = (row.get(q) or "").strip()
+        answer = (row.get(a) or "").strip()
+        if not question or not answer:
+            skipped += 1
+            continue
+        if schema == "qa":
+            out = {"question": question, "reference_answer": answer}
+            context = (row.get(ctx) or "").strip() if ctx else ""
+            if context:
+                out["context"] = context
+        else:
+            out = {"prompt": question, "completion": answer}
+        written.append(out)
+
+    if not written:
+        raise HTTPException(400, f"No valid rows found (skipped {skipped}). Check that the data columns are filled in.")
+
+    data_dir = config.get("paths", {}).get("data", "data")
+    out_dir = os.path.join(data_dir, niche)
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "verified_train.jsonl")
+    with open(out_path, "w") as f:
+        for r in written:
+            f.write(json.dumps(r) + "\n")
+
+    return {
+        "status": "ok",
+        "niche": niche,
+        "output_path": out_path,
+        "rows_written": len(written),
+        "rows_skipped": skipped,
+        "schema_detected": schema,
+    }
 
 
 # ── Export ──────────────────────────────────────────────────
@@ -1898,9 +1979,26 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <label>Dataset Type</label>
           <select id="ft-dataset-type">
             <option value="local">Local JSONL (point to existing file)</option>
+            <option value="csv">Upload CSV (convert to JSONL)</option>
             <option value="bigset">Auto-Generate (from description)</option>
           </select>
-          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Local = use your own JSONL file. Auto-Generate = creates data using available models.</span>
+          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Local = use your own JSONL file. Upload CSV = bring an external CSV and convert it. Auto-Generate = creates data using available models.</span>
+        </div>
+        <div class="form-group" id="ft-csv-group" style="display:none">
+          <label>Upload CSV Dataset</label>
+          <div style="font-size:10px;color:var(--text-secondary);background:var(--surface2);padding:8px 10px;border-radius:4px;margin-bottom:6px;line-height:1.5;">
+            <strong>Required schema</strong> — your CSV must have a header row with ONE of:
+            <ul style="margin:4px 0 4px 16px;padding:0;">
+              <li><code>question</code>, <code>reference_answer</code> &nbsp;(optional <code>context</code>)</li>
+              <li><code>prompt</code>, <code>completion</code></li>
+            </ul>
+            Column names are case-insensitive. One Q&amp;A pair per row; rows missing the required fields are skipped. Converts to <code>data/&lt;niche&gt;/verified_train.jsonl</code>.
+          </div>
+          <input id="ft-csv-file" type="file" accept=".csv,text/csv" style="font-size:11px;" />
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button id="ft-csv-btn" onclick="uploadCsv()" style="flex:1;padding:6px 12px;font-size:11px;background:var(--success);color:#fff;border:none;border-radius:4px;cursor:pointer;">⬆️ Upload &amp; Convert</button>
+          </div>
+          <div id="ft-csv-status" style="display:none;margin-top:6px;padding:6px 8px;border-radius:4px;font-size:11px;"></div>
         </div>
         <div class="form-group" id="ft-data-path-group">
           <label>Verified Data Path</label>
@@ -2053,9 +2151,12 @@ function useLocalDataset() {
 
 document.getElementById('ft-dataset-type').addEventListener('change', async function() {
   const isBigset = this.value === 'bigset';
-  document.getElementById('ft-data-path-group').style.display = isBigset ? 'none' : '';
+  const isCsv = this.value === 'csv';
+  document.getElementById('ft-data-path-group').style.display = (isBigset || isCsv) ? 'none' : '';
+  document.getElementById('ft-csv-group').style.display = isCsv ? '' : 'none';
   document.getElementById('ft-desc-group').style.display = isBigset ? '' : 'none';
   document.getElementById('ft-dataset-status').style.display = 'none';
+  document.getElementById('ft-csv-status').style.display = 'none';
   document.getElementById('ft-dataset-ready-badge').style.display = 'none';
   setDatasetReady(false);
 
@@ -2117,6 +2218,52 @@ async function generateDataset() {
   }
   btn.disabled = false;
   btn.textContent = '🔄 Generate Dataset (30 rows)';
+}
+
+async function uploadCsv() {
+  const niche = document.getElementById('ft-niche').value.trim();
+  const fileInput = document.getElementById('ft-csv-file');
+  const status = document.getElementById('ft-csv-status');
+  if (!niche) { alert('Enter a niche / domain name first.'); return; }
+  if (!fileInput.files || !fileInput.files[0]) { alert('Choose a CSV file first.'); return; }
+
+  const btn = document.getElementById('ft-csv-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Uploading...';
+  status.style.display = '';
+  status.style.background = 'rgba(88,166,255,0.15)';
+  status.style.color = 'var(--accent)';
+  status.textContent = 'Uploading and converting CSV...';
+
+  try {
+    const res = await fetch('/api/data/upload-csv?niche=' + encodeURIComponent(niche), {
+      method: 'POST',
+      headers: {'Content-Type': 'text/csv'},
+      body: fileInput.files[0],
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'ok') {
+      status.style.background = 'rgba(63,185,80,0.15)';
+      status.style.color = 'var(--success)';
+      status.textContent = '✅ ' + data.rows_written + ' rows converted ('
+        + data.schema_detected + ' schema'
+        + (data.rows_skipped ? ', ' + data.rows_skipped + ' skipped' : '')
+        + ') → ' + data.output_path;
+      document.getElementById('ft-data-path').value = data.output_path;
+      document.getElementById('ft-dataset-ready-badge').style.display = '';
+      setDatasetReady(true);
+    } else {
+      status.style.background = 'rgba(248,81,73,0.15)';
+      status.style.color = 'var(--danger)';
+      status.textContent = '❌ ' + (data.detail || data.error || 'Upload failed');
+    }
+  } catch(e) {
+    status.style.background = 'rgba(248,81,73,0.15)';
+    status.style.color = 'var(--danger)';
+    status.textContent = '❌ Error: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = '⬆️ Upload & Convert';
 }
 
 function setDatasetReady(ready) {
