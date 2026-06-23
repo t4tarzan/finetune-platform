@@ -127,6 +127,29 @@ def _disk_inference_models():
     return out
 
 
+def _load_inference_model(model_path: str, model_name: str, timeout: int = 600):
+    """Load a model (HF id or local merged dir) into the inference server (:7200)."""
+    import urllib.request
+    import urllib.parse
+    port = config.get("ports", {}).get("inference_api", 7200)
+    qs = urllib.parse.urlencode({"model_path": model_path, "model_name": model_name})
+    urllib.request.urlopen(urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/manage/load?{qs}", data=b"", method="POST"), timeout=timeout)
+
+
+def _unload_inference_model(model_name: str):
+    """Best-effort unload from the inference server (frees RAM between evals)."""
+    import urllib.request
+    import urllib.parse
+    port = config.get("ports", {}).get("inference_api", 7200)
+    qs = urllib.parse.urlencode({"model_name": model_name})
+    try:
+        urllib.request.urlopen(urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/manage/unload?{qs}", data=b"", method="POST"), timeout=30)
+    except Exception:
+        pass
+
+
 # ── Request models ──────────────────────────────────────────
 
 class StartTrainingRequest(BaseModel):
@@ -408,6 +431,60 @@ def get_leaderboard(niche: Optional[str] = Query(None)):
     if niche:
         return data.get(niche, {})
     return data
+
+
+@app.post("/api/evaluate")
+def evaluate_niche(
+    niche: str = Query(..., description="Niche to evaluate (must already be exported)"),
+    test_set_path: str = Query(..., description="JSONL test set ({question,reference_answer} or {prompt,completion})"),
+    base_model: str = Query("Qwen/Qwen2.5-0.5B-Instruct", description="Base model for the baseline"),
+    max_questions: int = Query(10, ge=1, le=500, description="Cap eval questions (CPU is slow)"),
+):
+    """Evaluate the base model (baseline) and the fine-tuned model on a JSONL test set,
+    recording both to the leaderboard with the delta. Both are served via the inference
+    server (:7200) for an apples-to-apples comparison."""
+    from pipeline.eval_harness import EvalHarness
+
+    if not os.path.exists(test_set_path):
+        raise HTTPException(404, f"Test set not found: {test_set_path}")
+    served = niche.replace("_", "-").lower()
+    dm = next((d for d in _disk_inference_models() if d["name"] == served), None)
+    if dm is None:
+        raise HTTPException(404, f"No exported model for niche '{niche}'. Export it first.")
+
+    harness = EvalHarness(config)
+
+    # 1) Baseline — serve the base model, evaluate, then unload to free RAM.
+    base_name = f"{served}-base"
+    try:
+        _load_inference_model(base_model, base_name)
+    except Exception as e:
+        raise HTTPException(500, f"Failed to load base model '{base_model}': {e}")
+    try:
+        base_score = harness.evaluate(base_name, test_set_path, model_type="inference", max_questions=max_questions)
+        base_score["model_name"] = base_model
+        leaderboard.set_baseline(niche, base_model, base_score)
+    finally:
+        _unload_inference_model(base_name)
+
+    # 2) Fine-tuned — serve the merged model, evaluate, record the iteration + delta.
+    try:
+        _load_inference_model(dm["path"], served)
+    except Exception as e:
+        raise HTTPException(500, f"Failed to load fine-tuned model '{served}': {e}")
+    ft_score = harness.evaluate(served, test_set_path, model_type="inference", max_questions=max_questions)
+    ft_score["model_name"] = served
+
+    train_rows = 0
+    meta = os.path.join("models", "adapters", niche, "training_metadata.json")
+    if os.path.exists(meta):
+        try:
+            train_rows = json.load(open(meta)).get("training_examples", 0)
+        except Exception:
+            pass
+    leaderboard.add_iteration(niche, ft_score, training_rows=train_rows)
+
+    return leaderboard.get_niche_leaderboard(niche)
 
 
 # ── Model Discovery ────────────────────────────────────────
@@ -1910,6 +1987,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <button class="btn btn-primary" id="ft-start-btn" onclick="startTraining()" disabled style="opacity:0.4;cursor:not-allowed;">▶ Start Training — setup dataset first</button>
           <button class="btn btn-danger" id="ft-stop-btn" onclick="stopTraining()" style="display:none">⏹ Stop Training</button>
           <button class="btn btn-outline" onclick="exportModel(this)">⬆ Export &amp; Serve Fine-Tuned Model</button>
+          <button class="btn btn-outline" onclick="evaluateModel(this)">📊 Evaluate vs Baseline (updates leaderboard)</button>
         </div>
       </div>
 
@@ -2481,6 +2559,40 @@ async function exportModel(btn) {
     loadAdapters();
   } catch (e) {
     document.getElementById('ft-message').textContent = 'Export failed: '+e;
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = 1; }
+  }
+}
+
+async function evaluateModel(btn) {
+  const niche = document.getElementById('ft-niche').value;
+  const testSet = document.getElementById('ft-data-path').value;
+  const baseModel = document.getElementById('ft-base-model').value;
+  if (!niche || !testSet) { alert('Set a niche and a dataset path first.'); return; }
+  if (btn) { btn.disabled = true; btn.style.opacity = 0.5; }
+  document.getElementById('ft-message').textContent = 'Evaluating base vs fine-tuned on the test set… (CPU — can take a minute or two)';
+  try {
+    const qs = '?niche='+encodeURIComponent(niche)+'&test_set_path='+encodeURIComponent(testSet)
+             + '&base_model='+encodeURIComponent(baseModel)+'&max_questions=10';
+    const res = await fetch('/api/evaluate'+qs, {method:'POST'});
+    if (!res.ok) {
+      let msg = 'Evaluation failed ('+res.status+')';
+      try { const j = await res.json(); if (j.detail) msg = 'Evaluation failed: '+j.detail; } catch (e) {}
+      document.getElementById('ft-message').textContent = msg;
+      return;
+    }
+    const lb = await res.json();
+    const it = (lb.iterations || [])[lb.iterations.length - 1] || {};
+    const baseAcc = (lb.baseline || {}).accuracy;
+    const acc = (it.results || {}).accuracy;
+    const d = (it.delta || {}).accuracy;
+    const pct = v => v == null ? '—' : (v*100).toFixed(1)+'%';
+    const sign = d != null && d >= 0 ? '+' : '';
+    document.getElementById('ft-message').textContent =
+      'Eval done — accuracy: baseline '+pct(baseAcc)+' → fine-tuned '+pct(acc)+' ('+sign+pct(d)+'). See Leaderboard.';
+    loadLeaderboard();
+  } catch (e) {
+    document.getElementById('ft-message').textContent = 'Evaluation failed: '+e;
   } finally {
     if (btn) { btn.disabled = false; btn.style.opacity = 1; }
   }

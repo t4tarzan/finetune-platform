@@ -75,16 +75,45 @@ class EvalHarness:
             return f"[ERROR: {e}]"
 
     def _query_ollama(self, model_name: str, prompt: str) -> str:
-        """Query a local Ollama model."""
+        """Query a local Ollama model via its HTTP API (OLLAMA_HOST or localhost)."""
+        import urllib.request
+        host = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+        if not host.startswith("http"):
+            host = "http://" + host
         try:
-            start = time.time()
-            result = subprocess.run(
-                ["ollama", "run", model_name, prompt],
-                capture_output=True, text=True, timeout=120
+            payload = json.dumps({
+                "model": model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "stream": False,
+            }).encode()
+            req = urllib.request.Request(
+                f"{host}/api/chat", data=payload,
+                headers={"Content-Type": "application/json"}, method="POST",
             )
-            if result.returncode == 0:
-                return result.stdout.strip()
-            return f"[ERROR: {result.stderr[:100]}]"
+            data = json.loads(urllib.request.urlopen(req, timeout=120).read())
+            if data.get("error"):
+                return f"[ERROR: {data['error']}]"
+            return ((data.get("message") or {}).get("content") or "").strip()
+        except Exception as e:
+            return f"[ERROR: {e}]"
+
+    def _query_inference(self, model_name: str, prompt: str, timeout: int = 120) -> str:
+        """Query a model served by the in-app inference server (:7200)."""
+        import urllib.request
+        port = self.config.get("ports", {}).get("inference_api", 7200)
+        try:
+            payload = json.dumps({
+                "model": model_name,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 256,
+            }).encode()
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{port}/v1/chat/completions", data=payload,
+                headers={"Content-Type": "application/json"}, method="POST",
+            )
+            data = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+            choice = (data.get("choices") or [{}])[0]
+            return ((choice.get("message") or {}).get("content") or choice.get("text") or "").strip()
         except Exception as e:
             return f"[ERROR: {e}]"
 
@@ -121,6 +150,7 @@ class EvalHarness:
         test_set_path: str,
         model_type: str = "cmd",
         num_repeats: int = 1,
+        max_questions: int = None,
     ) -> dict:
         """
         Evaluate a model against a test set.
@@ -136,6 +166,8 @@ class EvalHarness:
         """
         with open(test_set_path) as f:
             test_data = [json.loads(line) for line in f if line.strip()]
+        if max_questions:
+            test_data = test_data[:max_questions]
 
         print(f"\nEvaluating {model_id} on {len(test_data)} questions...")
         print(f"{'='*60}")
@@ -154,6 +186,8 @@ class EvalHarness:
 
                 if model_type == "cmd":
                     actual = self._query_cmd_model(model_id, prompt)
+                elif model_type == "inference":
+                    actual = self._query_inference(model_id, prompt)
                 else:
                     actual = self._query_ollama(model_id, prompt)
 
