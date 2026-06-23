@@ -2036,9 +2036,12 @@ async function loadModels() {
     const select = document.getElementById('model-select');
     select.innerHTML = '';
 
-    // Group: chat models first, then vision/code, then warn about others
-    const chat = data.models.filter(m => m.model_type === 'chat' || m.model_type === 'vision' || m.model_type === 'code');
-    const other = data.models.filter(m => m.model_type !== 'chat' && m.model_type !== 'vision' && m.model_type !== 'code');
+    // Group: chat models first, then vision/code, then warn about others. Fine-tuned
+    // models (inference provider) are always chat models — never demote them to
+    // "Other" just because their niche name matched a heuristic (e.g. contains 'audio').
+    const isChat = m => m.provider === 'inference' || m.model_type === 'chat' || m.model_type === 'vision' || m.model_type === 'code';
+    const chat = data.models.filter(isChat);
+    const other = data.models.filter(m => !isChat(m));
 
     // Add a default "select a model" option
     const def = document.createElement('option'); def.value = ''; def.textContent = '— Select a model —';
@@ -2049,7 +2052,7 @@ async function loadModels() {
       chat.forEach(m => {
         const o = document.createElement('option'); o.value = m.id;
         o.textContent = (m.icon||'💬')+' '+m.name;
-        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||'';
+        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||''; o.dataset.provider = m.provider||'';
         og.appendChild(o);
       });
       select.appendChild(og);
@@ -2059,7 +2062,7 @@ async function loadModels() {
       other.forEach(m => {
         const o = document.createElement('option'); o.value = m.id;
         o.textContent = (m.icon||'❓')+' '+m.name;
-        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||'';
+        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||''; o.dataset.provider = m.provider||'';
         og.appendChild(o);
       });
       select.appendChild(og);
@@ -2105,15 +2108,21 @@ async function sendMessage() {
   const msg = input.value.trim();
   if (!msg || !currentModel) return;
 
-  // Validate model type before sending
-  try {
-    const valRes = await fetch('/api/models/validate?model='+encodeURIComponent(currentModel));
-    const val = await valRes.json();
-    if (!val.valid) {
-      alert('⚠️ '+val.warnings.join('\\n'));
-      return;
-    }
-  } catch(e) { /* proceed anyway */ }
+  // Validate model type before sending — but skip it for fine-tuned models served by
+  // the inference server (they're chat models; the name heuristic would mis-flag a
+  // niche named e.g. 'audio-*'). This mirrors the backend chat() routing.
+  const selOpt = document.getElementById('model-select').selectedOptions[0];
+  const provider = selOpt ? (selOpt.dataset.provider || '') : '';
+  if (provider !== 'inference') {
+    try {
+      const valRes = await fetch('/api/models/validate?model='+encodeURIComponent(currentModel));
+      const val = await valRes.json();
+      if (!val.valid) {
+        alert('⚠️ '+val.warnings.join('\\n'));
+        return;
+      }
+    } catch(e) { /* proceed anyway */ }
+  }
 
   input.value = '';
   document.getElementById('send-btn').disabled = true;
