@@ -175,6 +175,46 @@ class DataStore:
         finally:
             con.close()
 
+    def import_table(self, path: str, table: str, mode: str = "replace") -> int:
+        """Import a CSV/Parquet/JSONL file as its OWN named table, preserving the
+        file's schema as-is (no forced training columns). Used to load relational
+        datasets (e.g. the bundled SRE observability tables) that the chat queries.
+
+        mode='replace' recreates the table; mode='append' adds rows (table must exist
+        with a compatible schema — used when a client appends more data over time).
+        """
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"File not found: {path}")
+        # Guard the table name (identifier only) — it's interpolated into DDL.
+        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", table):
+            raise ValueError(f"Invalid table name: {table}")
+        ext = os.path.splitext(path)[1].lower().lstrip(".")
+        reader = {"csv": "read_csv_auto", "parquet": "read_parquet",
+                  "jsonl": "read_json_auto", "json": "read_json_auto"}.get(ext, "read_csv_auto")
+        src = f"{reader}('{path}'" + (", header=true, sample_size=-1)" if reader == "read_csv_auto" else ")")
+        con = self.connect()
+        try:
+            if mode == "append" and table in self.list_tables():
+                con.execute(f"INSERT INTO {table} SELECT * FROM {src}")
+            else:
+                con.execute(f"CREATE OR REPLACE TABLE {table} AS SELECT * FROM {src}")
+            n = con.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+            print(f"  Loaded {n} rows into table '{table}' from {path}")
+            return n
+        finally:
+            con.close()
+
+    def import_dir(self, directory: str, mode: str = "replace") -> dict:
+        """Load every CSV in a directory as a table named after the file stem.
+        Returns {table: row_count}. This is how the appliance seeds its local DuckDB
+        from the bundled datasets on first boot."""
+        out = {}
+        for fn in sorted(os.listdir(directory)):
+            if fn.endswith(".csv"):
+                t = os.path.splitext(fn)[0].replace("-", "_")
+                out[t] = self.import_table(os.path.join(directory, fn), t, mode=mode)
+        return out
+
     # ── Export ──────────────────────────────────────────────────
 
     def export_parquet(self, query: str, output_path: str):
