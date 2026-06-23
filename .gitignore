@@ -19,9 +19,15 @@ models/adapters/
 models/gguf/
 
 # Per-run datasets / history / DBs (generated locally, not source).
-# Already-tracked example data under data/ is unaffected (gitignore does not
-# untrack), so the built-in example datasets stay in the repo.
-data/
+# Ignore everything under data/ EXCEPT the demo datasets, which ship with the
+# repo so a fresh clone can reproduce the SRE demo (the models themselves are
+# too large for git and are rebuilt by scripts/run_sre_demo.sh).
+data/*
+!data/sre-pods/
+data/sre-pods/*
+!data/sre-pods/dataset_v1.jsonl
+!data/sre-pods/dataset_v2.jsonl
+!data/example_train.jsonl
 
 # IDE
 .idea/

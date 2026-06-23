@@ -580,6 +580,23 @@ def logs_view(path: str = Query(..., description="Log path relative to logs/"),
         raise HTTPException(400, "Invalid log path")
 
 
+@app.get("/api/adapters")
+def list_adapters():
+    """List LoRA adapters already on disk (for the 'continue from fine-tuned'
+    / incremental-retraining picker). An adapter is a dir under models/adapters
+    containing adapters.safetensors."""
+    base = os.path.join(
+        config.get("paths", {}).get("models", "models"), "adapters"
+    )
+    adapters = []
+    if os.path.isdir(base):
+        for d in sorted(os.listdir(base)):
+            full = os.path.join(base, d)
+            if os.path.isfile(os.path.join(full, "adapters.safetensors")):
+                adapters.append({"niche": d, "path": full})
+    return {"adapters": adapters}
+
+
 @app.get("/api/train/niches")
 def list_niches():
     """List available fine-tuned niches / datasets from the data directory."""
@@ -1841,6 +1858,14 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Larger models = better accuracy, more memory. 7B needs ~8GB for training.</span>
         </div>
 
+        <div class="form-group">
+          <label>Continue from fine-tuned <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">— retrain an existing model on more data</span></label>
+          <select id="ft-resume-adapter">
+            <option value="">None — train fresh from base model</option>
+          </select>
+          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Pick a previous adapter to keep training it (incremental fine-tuning) instead of starting over. Loss continues from where that run left off.</span>
+        </div>
+
         <!-- Step 3: Hyperparameters -->
         <div class="form-section"><h4>⚙️ Hyperparameters</h4></div>
         <div class="form-row">
@@ -2177,7 +2202,27 @@ function getConfig() {
     learning_rate: parseFloat(document.getElementById('ft-lr').value),
     epochs: parseInt(document.getElementById('ft-epochs').value),
     max_rows: parseInt(document.getElementById('ft-rows').value),
+    resume_adapter: document.getElementById('ft-resume-adapter').value,
   };
+}
+
+// Populate the "Continue from fine-tuned" dropdown with adapters already on disk
+// so a previous run can be retrained on more data (incremental fine-tuning).
+async function loadAdapters() {
+  try {
+    const sel = document.getElementById('ft-resume-adapter');
+    if (!sel) return;
+    const keep = sel.value;
+    const res = await fetch('/api/adapters');
+    const data = await res.json();
+    sel.innerHTML = '<option value="">None — train fresh from base model</option>';
+    (data.adapters || []).forEach(a => {
+      const o = document.createElement('option');
+      o.value = a.path; o.textContent = a.niche;
+      sel.appendChild(o);
+    });
+    if (keep) sel.value = keep;
+  } catch (e) { console.error(e); }
 }
 
 async function startTraining() {
@@ -2433,6 +2478,7 @@ async function exportModel(btn) {
     }
     document.getElementById('ft-message').textContent = 'Export complete — model merged and served (Ollama on macOS, the inference server :7200 on Linux). Pick it in the Chat tab.';
     loadModels();
+    loadAdapters();
   } catch (e) {
     document.getElementById('ft-message').textContent = 'Export failed: '+e;
   } finally {
@@ -2682,6 +2728,7 @@ async function loadInferenceModel() {
 loadModels();
 loadLeaderboard();
 loadDocs();
+loadAdapters();
 checkInferenceStatus();
 initTrainState();
 setInterval(loadLeaderboard, 30000);
