@@ -13,7 +13,9 @@ Each iteration:
 
 import json
 import os
+import socket
 import sys
+import tempfile
 import time
 import subprocess
 import yaml
@@ -26,8 +28,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from pipeline.consensus_verifier import (
     ConsensusVerifier, DataPoint, save_verified_dataset
 )
+# train_qlora / export_gguf functions are MLX (Apple Silicon) — imported here because
+# the module loads fine on Linux, but only CALLED on Mac. On Linux, training runs via
+# the HuggingFace worker subprocess and eval/serving via the inference server (:7200);
+# the backend is chosen at runtime by mlx_available().
 from pipeline.train_qlora import prepare_training_data, fine_tune, export_to_gguf, register_with_ollama
 from pipeline.eval_harness import EvalHarness, BenchmarkLeaderboard
+from pipeline.training_manager import mlx_available
 
 
 def load_config():
@@ -45,6 +52,7 @@ class RecursiveLoop:
         self.leaderboard = BenchmarkLeaderboard()
         self.pipeline_dir = os.path.dirname(os.path.abspath(__file__))
         self.project_root = os.path.dirname(self.pipeline_dir)
+        self._inf_proc = None  # inference server we started (Linux eval), torn down at the end
 
     def generate_dataset_bigset(self, niche_desc: str, niche_name: str, max_rows: int = 50) -> str:
         """Generate a dataset using BigSet from a natural language description."""
@@ -194,65 +202,71 @@ class RecursiveLoop:
         with open(os.path.join(niche_data_dir, "train.jsonl")) as f:
             num_train = sum(1 for _ in f if _.strip())
 
-        # Step 3: Run baseline eval if this is iteration 1
-        baseline_model = self.config.get("base_model", "")
-        niche_leaderboard = self.leaderboard.get_niche_leaderboard(niche_name)
-
-        if iteration == 1 and niche_leaderboard.get("baseline") is None:
-            print(f"\n{'='*60}")
-            print("Establishing baseline benchmark...")
-            print(f"{'='*60}")
-
-            base_model_id = self.config.get("consensus_models", [None])[0]
-            if base_model_id:
-                baseline_score = self.eval_harness.evaluate(
-                    model_id=base_model_id,
-                    test_set_path=os.path.join(niche_data_dir, "valid.jsonl"),
-                    model_type="cmd",
-                    num_repeats=1,
-                )
-                self.leaderboard.set_baseline(niche_name, base_model_id, baseline_score)
-                print(f"  Baseline set: accuracy={baseline_score['accuracy']:.1%}")
-
-        # Step 4: Fine-tune
+        # Steps 3-8 dispatch by backend, chosen at runtime:
+        #   MLX (Apple Silicon)  -> in-process fine_tune + Ollama serving/eval
+        #   HuggingFace/CPU (Linux) -> HF worker subprocess + inference server (:7200)
+        is_mlx = mlx_available()
+        test_set = os.path.join(niche_data_dir, "valid.jsonl")
+        iter_niche = f"{niche_name}-iter{iteration}"
         adapter_path = os.path.join(
             self.project_root,
             self.config.get("paths", {}).get("adapter_path", "models/adapters"),
-            f"{niche_name}-iter{iteration}",
+            iter_niche,
         )
+        niche_leaderboard = self.leaderboard.get_niche_leaderboard(niche_name)
 
-        fine_tune(
-            niche=f"{niche_name}-iter{iteration}",
-            data_dir=niche_data_dir,
-            config=self.config,
-            epochs=epochs,
-            adapter_path=adapter_path,
-        )
+        # Step 3: baseline benchmark (iteration 1 only)
+        if iteration == 1 and niche_leaderboard.get("baseline") is None:
+            print(f"\n{'='*60}\nEstablishing baseline benchmark...\n{'='*60}")
+            if is_mlx:
+                base_model_id = self.config.get("consensus_models", [None])[0]
+                if base_model_id:
+                    baseline_score = self.eval_harness.evaluate(
+                        model_id=base_model_id, test_set_path=test_set,
+                        model_type="cmd", num_repeats=1,
+                    )
+                    self.leaderboard.set_baseline(niche_name, base_model_id, baseline_score)
+                    print(f"  Baseline set: accuracy={baseline_score['accuracy']:.1%}")
+            else:
+                from pipeline.training_worker_hf import resolve_model_id
+                hf_base = resolve_model_id(self.config.get("base_model", ""))
+                self._ensure_inference_server()
+                base_name = f"{iter_niche}-base"
+                self._load_inf(hf_base, base_name)
+                try:
+                    baseline_score = self.eval_harness.evaluate(
+                        model_id=base_name, test_set_path=test_set, model_type="inference",
+                    )
+                    baseline_score["model_name"] = hf_base
+                    self.leaderboard.set_baseline(niche_name, hf_base, baseline_score)
+                    print(f"  Baseline set: accuracy={baseline_score['accuracy']:.1%}")
+                finally:
+                    self._unload_inf(base_name)
 
-        # Step 5: Export
-        merged_path = export_to_gguf(
-            niche=f"{niche_name}-iter{iteration}",
-            adapter_path=adapter_path,
-            export_dir=os.path.join(
-                self.project_root,
-                self.config.get("paths", {}).get("export_path", "models/gguf"),
-            ),
-            config=self.config,
-        )
+        # Step 4: fine-tune (MLX in-process, or HF worker subprocess on Linux)
+        self._run_training(iter_niche, niche_data_dir, adapter_path, epochs)
 
-        # Step 6: Register with Ollama
-        register_with_ollama(
-            niche=f"{niche_name}-iter{iteration}",
-            model_path=merged_path,
-        )
-
-        # Step 7: Eval the fine-tuned model (via Ollama)
-        ollama_model = f"{niche_name}-iter{iteration}-v1"
-        eval_score = self.eval_harness.evaluate(
-            model_id=ollama_model,
-            test_set_path=os.path.join(niche_data_dir, "valid.jsonl"),
-            model_type="ollama",
-        )
+        # Steps 5-7: export, serve, and eval the fine-tuned model
+        if is_mlx:
+            merged_path = export_to_gguf(
+                niche=iter_niche, adapter_path=adapter_path,
+                export_dir=os.path.join(self.project_root, self.config.get("paths", {}).get("export_path", "models/gguf")),
+                config=self.config,
+            )
+            register_with_ollama(niche=iter_niche, model_path=merged_path)
+            eval_model = f"{iter_niche}-v1"
+            eval_score = self.eval_harness.evaluate(
+                model_id=eval_model, test_set_path=test_set, model_type="ollama",
+            )
+        else:
+            from pipeline.export_hf import export_model as export_hf_model
+            self._ensure_inference_server()
+            export_hf_model(niche=iter_niche, adapter_path=adapter_path, config=self.config, register=True)
+            eval_model = iter_niche.replace("_", "-").lower()
+            eval_score = self.eval_harness.evaluate(
+                model_id=eval_model, test_set_path=test_set, model_type="inference",
+            )
+            eval_score["model_name"] = eval_model
 
         # Step 8: Record to leaderboard
         consensus_agreement = report["summary"]["verification_rate"] if not skip_data_generation else 1.0
@@ -270,7 +284,7 @@ class RecursiveLoop:
 
         print(f"\n{'='*60}")
         print(f"Iteration {iteration} complete!")
-        print(f"  Model: {ollama_model}")
+        print(f"  Model: {eval_model}")
         print(f"  Accuracy: {eval_score.get('accuracy', '?'):.1%}")
         self.leaderboard.print_leaderboard(niche_name)
         print(f"{'='*60}")
@@ -278,11 +292,124 @@ class RecursiveLoop:
         return {
             "iteration": iteration,
             "status": "completed",
-            "model_name": ollama_model,
+            "model_name": eval_model,
             "accuracy": eval_score.get("accuracy"),
             "training_rows": num_train,
             "consensus_rate": consensus_agreement if not skip_data_generation else None,
         }
+
+    # ── HuggingFace/CPU (Linux) backend helpers ─────────────────────────
+
+    def _inf_port(self) -> int:
+        return self.config.get("ports", {}).get("inference_api", 7200)
+
+    def _inf_up(self) -> bool:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            return s.connect_ex(("127.0.0.1", self._inf_port())) == 0
+        finally:
+            s.close()
+
+    def _ensure_inference_server(self, wait_s: int = 120):
+        """Start the inference server (:7200) if it isn't already running (e.g. when
+        the platform's web app is up, it already is — we reuse it)."""
+        if self._inf_up():
+            return
+        py = os.path.join(self.project_root, ".venv", "bin", "python")
+        if not os.path.exists(py):
+            py = sys.executable
+        server = os.path.join(self.pipeline_dir, "inference_server.py")
+        print(f"  Starting inference server on :{self._inf_port()} ...")
+        self._inf_proc = subprocess.Popen(
+            [py, server], cwd=self.project_root,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        t0 = time.time()
+        while time.time() - t0 < wait_s:
+            if self._inf_up():
+                print("  inference server up.")
+                return
+            time.sleep(1)
+        raise RuntimeError("inference server did not become reachable in time")
+
+    def _stop_inference_server(self):
+        """Stop the inference server only if WE started it (leave a pre-existing one)."""
+        if self._inf_proc is not None:
+            self._inf_proc.terminate()
+            try:
+                self._inf_proc.wait(timeout=10)
+            except Exception:
+                self._inf_proc.kill()
+            self._inf_proc = None
+
+    def _load_inf(self, model_path: str, model_name: str, timeout: int = 600):
+        import urllib.request
+        import urllib.parse
+        qs = urllib.parse.urlencode({"model_path": model_path, "model_name": model_name})
+        urllib.request.urlopen(urllib.request.Request(
+            f"http://127.0.0.1:{self._inf_port()}/api/manage/load?{qs}", data=b"", method="POST"), timeout=timeout)
+
+    def _unload_inf(self, model_name: str):
+        import urllib.request
+        import urllib.parse
+        qs = urllib.parse.urlencode({"model_name": model_name})
+        try:
+            urllib.request.urlopen(urllib.request.Request(
+                f"http://127.0.0.1:{self._inf_port()}/api/manage/unload?{qs}", data=b"", method="POST"), timeout=30)
+        except Exception:
+            pass
+
+    def _run_training(self, niche: str, data_dir: str, adapter_path: str, epochs):
+        """Train one adapter — MLX in-process on Mac, HF worker subprocess on Linux."""
+        if mlx_available():
+            fine_tune(niche=niche, data_dir=data_dir, config=self.config,
+                      epochs=epochs, adapter_path=adapter_path)
+            return
+
+        tcfg = self.config.get("training", {})
+        worker_config = {
+            "niche": niche, "data_dir": data_dir, "adapter_path": adapter_path,
+            "stop_file": os.path.join(tempfile.gettempdir(), f"recur_stop_{niche}"),
+            "base_model": self.config.get("base_model"),
+            "lora_rank": tcfg.get("lora_rank", 16), "lora_alpha": tcfg.get("lora_alpha", 32),
+            "learning_rate": tcfg.get("learning_rate", 1e-4), "batch_size": tcfg.get("batch_size", 4),
+            "epochs": epochs or tcfg.get("epochs", 3), "max_seq_length": tcfg.get("max_seq_length", 2048),
+            "grad_checkpoint": True, "max_rows": 1000000,
+        }
+        py = os.path.join(self.project_root, ".venv", "bin", "python")
+        if not os.path.exists(py):
+            py = sys.executable
+        worker = os.path.join(self.pipeline_dir, "training_worker_hf.py")
+        print("  Training via HuggingFace/CPU worker...")
+        proc = subprocess.Popen(
+            [py, worker], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True, cwd=self.project_root,
+        )
+        proc.stdin.write(json.dumps(worker_config) + "\n")
+        proc.stdin.flush()
+        proc.stdin.close()
+        completed = False
+        for line in proc.stdout:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                ev = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            et = ev.get("event")
+            if et == "progress" and ev.get("step"):
+                print(f"    step {ev['step']}/{ev.get('total_steps', '?')} loss={ev.get('loss')}")
+            elif et == "complete":
+                completed = True
+                print(f"    training complete: final_loss={ev.get('final_loss')}")
+            elif et == "error":
+                err = proc.stderr.read() if proc.stderr else ""
+                raise RuntimeError(f"HF training failed: {ev.get('message')}\n{err[:500]}")
+        proc.wait()
+        if not completed:
+            err = proc.stderr.read() if proc.stderr else ""
+            raise RuntimeError(f"HF training did not complete.\n{err[:500]}")
 
     def run_recursive(
         self,
@@ -329,8 +456,8 @@ class RecursiveLoop:
                 iteration=i,
                 epochs=epochs_per_iter,
                 max_rows=max_rows,
-                skip_data_generation=skip_data_generation and i > 1,
-                existing_data_path=existing_data_path if i == 1 else None,
+                skip_data_generation=skip_data_generation,
+                existing_data_path=existing_data_path,
             )
 
             results.append(result)
@@ -365,6 +492,7 @@ class RecursiveLoop:
 
         # Final summary
         self._print_final_summary(niche_name, baseline_model, results)
+        self._stop_inference_server()  # only stops one we started; leaves a pre-existing one
         return results
 
     def _refine_description(self, original_desc: str, results: list) -> str:
