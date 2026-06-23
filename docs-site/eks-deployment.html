@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deploy Fine-Tuning Platform on Amazon EKS</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #1c2128;
+    --border: #30363d; --text: #e6edf3; --text-secondary: #8b949e;
+    --accent: #58a6ff; --success: #3fb950; --warning: #d29922; --radius: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 40px 24px; }
+  h1 { font-size: 2rem; margin-bottom: 8px; }
+  .subtitle { color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 24px; }
+  h2 { font-size: 1.3rem; margin: 36px 0 12px; color: var(--accent); }
+  h3 { font-size: 1.02rem; margin: 22px 0 8px; }
+  p { margin-bottom: 12px; color: var(--text-secondary); }
+  ul, ol { margin: 8px 0 16px 20px; color: var(--text-secondary); }
+  li { margin: 5px 0; }
+  strong { color: var(--text); }
+  code {
+    background: var(--surface2); padding: 2px 6px; border-radius: 4px;
+    font-size: 0.9em; color: var(--accent);
+  }
+  pre {
+    background: var(--surface2); padding: 16px; border-radius: var(--radius);
+    overflow-x: auto; margin: 12px 0; border: 1px solid var(--border); font-size: 13.5px;
+  }
+  pre code { background: none; padding: 0; color: var(--text); }
+  .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; margin-right: 6px; }
+  .badge.blue { background: rgba(88,166,255,0.15); color: var(--accent); }
+  .badge.green { background: rgba(63,185,80,0.15); color: var(--success); }
+  .badge.amber { background: rgba(210,153,34,0.15); color: var(--warning); }
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin: 16px 0; }
+  .feature-card { background: var(--surface2); padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); }
+  .feature-card h4 { font-size: 14px; margin-bottom: 6px; }
+  .feature-card p { font-size: 13px; margin: 0; }
+  .step { display: flex; align-items: baseline; gap: 10px; margin: 28px 0 6px; }
+  .step .n { flex: 0 0 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%;
+             background: var(--accent); color: #0d1117; font-weight: 700; font-size: 14px; }
+  .step h2 { margin: 0; }
+  .note { background: rgba(88,166,255,0.08); border-left: 3px solid var(--accent); padding: 10px 14px;
+          border-radius: 4px; margin: 14px 0; font-size: 14px; color: var(--text-secondary); }
+  .warn { background: rgba(210,153,34,0.08); border-left: 3px solid var(--warning); padding: 10px 14px;
+          border-radius: 4px; margin: 14px 0; font-size: 14px; color: var(--text-secondary); }
+  figure { margin: 18px 0; }
+  figure img { width: 100%; border-radius: var(--radius); border: 1px solid var(--border); display: block; }
+  figcaption { color: var(--text-secondary); font-size: 12.5px; margin-top: 8px; text-align: center; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
+  th { background: var(--surface2); color: var(--text); }
+  td { color: var(--text-secondary); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+  .footer { text-align: center; color: var(--text-secondary); font-size: 13px; padding: 24px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .svg-wrap { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>🚀 Deploy on Amazon EKS</h1>
+<p class="subtitle">
+  Install the Fine-Tuning Platform on a Kubernetes cluster — one Helm command from a
+  public image. Train, retrain, and serve LoRA fine-tuned models from a single pod.
+</p>
+<div>
+  <span class="badge blue">EKS</span>
+  <span class="badge green">Helm</span>
+  <span class="badge blue">amd64 / CPU</span>
+  <span class="badge green">Public image (GHCR)</span>
+  <span class="badge amber">No build required</span>
+</div>
+
+<h2>What gets deployed</h2>
+<p>
+  One <strong>stateful pod</strong> (the app is single-instance by design) exposing the
+  web UI on <code>:7100</code> and an OpenAI-compatible inference API on <code>:7200</code>,
+  backed by EBS volumes for models, datasets, the HuggingFace cache, and logs. An
+  optional Ollama sidecar provides base-model chat. In-cluster it runs the
+  <strong>HuggingFace/PyTorch CPU backend</strong> — works on any amd64 node.
+</p>
+
+<div class="svg-wrap">
+<svg viewBox="0 0 760 300" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system, Segoe UI, sans-serif">
+  <defs>
+    <style>
+      .box{fill:#1c2128;stroke:#30363d;stroke-width:1.5;rx:8;}
+      .lbl{fill:#e6edf3;font-size:13px;font-weight:600;}
+      .sub{fill:#8b949e;font-size:11px;}
+      .acc{fill:#58a6ff;font-size:11px;font-weight:600;}
+      .grn{fill:#3fb950;font-size:11px;font-weight:600;}
+      .edge{stroke:#8b949e;stroke-width:1.3;fill:none;}
+    </style>
+    <marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#8b949e"/></marker>
+  </defs>
+  <!-- user -->
+  <text x="20" y="40" class="lbl">User</text>
+  <text x="20" y="56" class="sub">browser / kubectl</text>
+  <line x1="20" y1="70" x2="20" y2="150" class="edge" marker-end="url(#ar)"/>
+  <text x="28" y="115" class="sub">Ingress / LB / port-forward</text>
+
+  <!-- EKS cluster box -->
+  <rect x="180" y="20" width="560" height="260" rx="10" fill="none" stroke="#30363d" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="196" y="40" class="acc">Amazon EKS cluster (amd64 node)</text>
+
+  <!-- ingress -->
+  <rect x="200" y="60" width="120" height="48" class="box" rx="8"/>
+  <text x="212" y="82" class="lbl">ingress-nginx</text>
+  <text x="212" y="98" class="sub">/finetune-platform</text>
+  <line x1="20" y1="150" x2="200" y2="86" class="edge" marker-end="url(#ar)"/>
+
+  <!-- pod -->
+  <rect x="200" y="135" width="320" height="125" class="box" rx="8"/>
+  <text x="214" y="156" class="acc">Pod: finetune-platform (1 replica)</text>
+  <rect x="216" y="168" width="140" height="34" fill="#161b22" stroke="#30363d" rx="6"/>
+  <text x="226" y="189" class="lbl">platform :7100/:7200</text>
+  <rect x="366" y="168" width="138" height="34" fill="#161b22" stroke="#30363d" rx="6"/>
+  <text x="376" y="189" class="grn">ollama :11434</text>
+  <text x="216" y="226" class="sub">init: seed demo datasets → data PVC</text>
+  <text x="216" y="244" class="sub">HF/PyTorch CPU backend</text>
+  <line x1="320" y1="86" x2="320" y2="135" class="edge" marker-end="url(#ar)"/>
+
+  <!-- PVCs -->
+  <rect x="560" y="135" width="160" height="125" class="box" rx="8"/>
+  <text x="574" y="156" class="acc">EBS PVCs (gp3)</text>
+  <text x="574" y="180" class="sub">models · data</text>
+  <text x="574" y="198" class="sub">hf-cache · logs</text>
+  <text x="574" y="222" class="sub">+ ollama models</text>
+  <line x1="520" y1="198" x2="560" y2="198" class="edge" marker-end="url(#ar)"/>
+</svg>
+</div>
+
+<div class="feature-grid">
+  <div class="feature-card"><h4><span class="badge blue">1 pod</span> Stateful</h4><p>Single replica — in-memory training state + RWO volumes. Scale the node, not the pod.</p></div>
+  <div class="feature-card"><h4><span class="badge green">PVCs</span> Persistent</h4><p>models, datasets, HF cache, logs on EBS (gp3) — survive restarts.</p></div>
+  <div class="feature-card"><h4><span class="badge blue">Seeded</span> Demo data</h4><p>Two sample datasets baked in &amp; auto-seeded → ready in the Train dropdown.</p></div>
+  <div class="feature-card"><h4><span class="badge green">Ollama</span> Sidecar</h4><p>Optional base-model chat in-pod; fine-tuned models served by :7200.</p></div>
+</div>
+
+<h2>Prerequisites</h2>
+<ul>
+  <li><code>kubectl</code> pointed at your cluster: <code>aws eks update-kubeconfig --name &lt;cluster&gt; --region &lt;region&gt;</code></li>
+  <li><code>helm</code> v3</li>
+  <li>An <strong>amd64 node group</strong> with ≥ 8 GB RAM (for 0.5B / 1.5B models)</li>
+  <li>The <strong>EBS CSI driver</strong> + a StorageClass (the chart defaults to <code>gp3</code>)</li>
+  <li>Egress to <code>ghcr.io</code> (image) and <code>huggingface.co</code> (base model on first train). Air-gapped? See the build path.</li>
+</ul>
+<pre><code>kubectl get nodes -o wide      # confirm amd64 + Ready
+kubectl get storageclass       # confirm gp3 (or note your class)</code></pre>
+
+<div class="step"><span class="n">1</span><h2>Install (no build — public image)</h2></div>
+<p>
+  The image <code>ghcr.io/t4tarzan/finetune-platform:latest</code> is public (amd64) and is
+  the chart's default, so install is one command — no <code>docker build</code>, no pull secret:
+</p>
+<pre><code>helm install finetune-platform charts/finetune-platform \
+  --namespace finetune --create-namespace \
+  --set persistence.storageClass=gp3 \
+  --set ollama.enabled=true
+
+kubectl -n finetune rollout status deploy/finetune-platform   # first boot pulls the base model</code></pre>
+<p>Or run the bundled one-liner: <code>bash scripts/install-eks.sh</code></p>
+
+<div class="warn">
+  <strong>Air-gapped / private registry?</strong> Build the image from the included
+  Dockerfile and push to your ECR, then add <code>--set image.repository=$IMAGE</code>:
+  <pre style="margin-top:8px"><code>REG=&lt;acct&gt;.dkr.ecr.&lt;region&gt;.amazonaws.com
+aws ecr create-repository --repository-name finetune-platform || true
+aws ecr get-login-password --region &lt;region&gt; | docker login -u AWS --password-stdin $REG
+docker buildx build --platform linux/amd64 -t $REG/finetune-platform:latest --push .</code></pre>
+  ECR repos are pulled by the node IAM role (needs <code>AmazonEC2ContainerRegistryReadOnly</code>) — no pull secret.
+</div>
+
+<div class="step"><span class="n">2</span><h2>Expose the UI</h2></div>
+<p><strong>Quick (no ingress):</strong></p>
+<pre><code>kubectl -n finetune port-forward svc/finetune-platform 7100:7100
+# open http://localhost:7100</code></pre>
+<p><strong>LoadBalancer</strong> — its own external address:</p>
+<pre><code>helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
+  --set service.type=LoadBalancer
+kubectl -n finetune get svc finetune-platform -w        # grab EXTERNAL-IP</code></pre>
+<p><strong>Shared nginx under a sub-path</strong> (e.g. <code>https://&lt;host&gt;/finetune-platform</code>):</p>
+<pre><code>helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
+  --set ingress.enabled=true --set ingress.className=nginx \
+  --set basePath=/finetune-platform</code></pre>
+<div class="note">
+  <code>basePath</code> sets <code>BASE_PATH</code> in the pod (the UI prefixes every API call)
+  <em>and</em> auto-configures the nginx ingress (regex path + a <code>rewrite-target</code> that
+  strips the prefix). Leave it empty for a dedicated host or LoadBalancer.
+</div>
+
+<div class="step"><span class="n">3</span><h2>Load a base model</h2></div>
+<p>The Ollama sidecar starts empty — pull one so the chat dropdown isn't empty:</p>
+<pre><code>kubectl -n finetune exec -c ollama deploy/finetune-platform -- ollama pull qwen2.5:0.5b</code></pre>
+<p>(Fine-tuned models you train &amp; export don't need this — they're served by <code>:7200</code>.)</p>
+
+<div class="step"><span class="n">4</span><h2>Verify &amp; run the demo</h2></div>
+<p>Open the UI → <strong>Train</strong> tab. You should see the training console with the
+  dataset picker, base-model + LoRA settings, the live loss chart, and run history:</p>
+<figure>
+  <img src="img/ui-train.png" alt="Train tab — config panel, live loss curve, run history">
+  <figcaption>Train tab — pick a dataset, choose the base model, watch the loss curve stream live.</figcaption>
+</figure>
+<p>The incremental-improvement demo (datasets are pre-seeded):</p>
+<ol>
+  <li><strong>Dataset</strong> → <code>dataset_v1.jsonl</code> (100 rows) → <strong>Use This Dataset</strong></li>
+  <li>Base model <strong>Qwen2.5-1.5B</strong>, rows <code>120</code> → <strong>Start Training</strong> (loss falls ~3.4 → ~0.03)</li>
+  <li><strong>⬆ Export &amp; Serve</strong> → <strong>Chat</strong> → pick the fine-tuned model → ask a question</li>
+  <li>Back to <strong>Train</strong> → <code>dataset_v2.jsonl</code> (150 rows) → <strong>Continue from fine-tuned → v1</strong> → retrain (loss continues lower)</li>
+  <li><strong>Export &amp; Serve</strong> → <strong>Chat</strong> again → the answer is sharper</li>
+</ol>
+<figure>
+  <img src="img/ui-chat.png" alt="Chat tab — fine-tuned model answering with concrete YAML">
+  <figcaption>Chat with a fine-tuned model — served from the in-cluster inference API (:7200).</figcaption>
+</figure>
+
+<h2>Sizing &amp; storage</h2>
+<table>
+  <tr><th>Setting</th><th>Default</th><th>Notes</th></tr>
+  <tr><td><code>resources</code></td><td>1–3 CPU / 4–12 GiB</td><td>Raise for larger models</td></tr>
+  <tr><td><code>persistence.models</code></td><td>20 Gi</td><td>Adapters + merged models (GB each)</td></tr>
+  <tr><td><code>persistence.hfCache</code></td><td>30 Gi</td><td>Base-model downloads</td></tr>
+  <tr><td><code>persistence.storageClass</code></td><td>gp3</td><td><code>""</code> = cluster default; EFS for RWX</td></tr>
+</table>
+<div class="warn">
+  CPU training is slow — keep to <strong>0.5B / 1.5B + small datasets</strong> on a CPU node.
+  For real throughput use a GPU node group + a CUDA image (see the chart README).
+</div>
+
+<h2>Uninstall</h2>
+<pre><code>helm uninstall finetune-platform -n finetune
+kubectl -n finetune delete pvc -l app.kubernetes.io/name=finetune-platform   # also deletes data</code></pre>
+
+<hr>
+<div class="footer">
+  Fine-Tuning Platform · EKS deployment guide · single-pod · amd64 / CPU · Helm chart at <code>charts/finetune-platform</code>
+</div>
+
+</div>
+</body>
+</html>
