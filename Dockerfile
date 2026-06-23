@@ -25,6 +25,11 @@ RUN pip install torch==2.12.0 --index-url https://download.pytorch.org/whl/cpu \
 
 COPY . .
 
+# Generate the bundled SRE observability tables into the image (data/sre-tables/*.csv).
+# Done at build (not committed) so the appliance ships with the data; the chart's init
+# container seeds these into the data volume on first boot for the chat's preset cards.
+RUN python scripts/gen_sre_tables.py
+
 # 7100 = web UI (chat + train) · 7200 = OpenAI-compatible inference server
 EXPOSE 7100 7200
 

@@ -43,10 +43,11 @@ spec:
             - sh
             - -c
             - |
-              mkdir -p /seed/sre-pods
+              mkdir -p /seed/sre-pods /seed/sre-tables
               cp -n /app/data/sre-pods/*.jsonl /seed/sre-pods/ 2>/dev/null || true
               cp -n /app/data/example_train.jsonl /seed/ 2>/dev/null || true
-              echo "seeded demo datasets:"; ls -R /seed 2>/dev/null | head -20
+              cp -n /app/data/sre-tables/*.csv /seed/sre-tables/ 2>/dev/null || true
+              echo "seeded datasets:"; ls -R /seed 2>/dev/null | head -30
           volumeMounts:
             - name: data
               mountPath: /seed
