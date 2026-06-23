@@ -219,7 +219,7 @@ def list_models():
     # Base models from Ollama via its HTTP API (works in a container that points
     # OLLAMA_HOST at a host/sidecar Ollama — no `ollama` CLI needed in the image).
     try:
-        resp = urllib.request.urlopen(f"{OLLAMA_HOST}/api/tags", timeout=5)
+        resp = urllib.request.urlopen(f"{OLLAMA_HOST}/api/tags", timeout=3)
         for m in json.loads(resp.read()).get("models", []):
             name = m.get("name")
             if name:
@@ -279,18 +279,22 @@ def chat(
     if not model:
         raise HTTPException(400, "model required")
 
-    # Validate model type
-    validation = validate_model(model)
-    if not validation["valid"]:
-        raise HTTPException(400, validation["warnings"][0] if validation["warnings"] else "Model incompatible with chat")
-
     models = list_models().get("models", [])
     entry = next((m for m in models if m["id"] == model), None)
     provider = entry["provider"] if entry else "ollama"
 
+    # A fine-tuned model you exported is a chat model — route it straight to the
+    # inference server. We skip the name-heuristic validate_model() here, which would
+    # otherwise mis-flag a niche whose name happens to contain 'audio'/'embed'/etc.
     if provider == "inference":
         return _chat_inference(message, model)
-    elif provider == "ollama":
+
+    # For base/Ollama models, block obviously-incompatible types (embeddings, audio).
+    validation = validate_model(model)
+    if not validation["valid"]:
+        raise HTTPException(400, validation["warnings"][0] if validation["warnings"] else "Model incompatible with chat")
+
+    if provider == "ollama":
         return _chat_ollama(message, model, stream)
     else:
         return _chat_cmd(message, model)
@@ -314,6 +318,10 @@ def _chat_ollama(message: str, model: str, stream: bool):
         data = json.loads(resp.read())
     except Exception as e:
         raise HTTPException(500, f"Ollama ({OLLAMA_HOST}) error: {e}")
+    # Ollama reports some failures (e.g. model not pulled) as HTTP 200 with an
+    # {"error": ...} body — surface it instead of returning a blank reply.
+    if data.get("error"):
+        raise HTTPException(500, f"Ollama error: {data['error']}")
     text = (data.get("message") or {}).get("content") or ""
     return {
         "response": text.strip(), "model": model,
@@ -330,11 +338,13 @@ def _chat_inference(message: str, model: str):
 
     # Lazy-load the merged model if the inference server doesn't have it in memory
     # (e.g. after a restart — it's still on disk). Match by served name.
+    got_loaded = True
     try:
         cur = json.loads(urllib.request.urlopen(f"http://127.0.0.1:{port}/v1/models", timeout=5).read())
         loaded_names = {m.get("id") for m in cur.get("data", [])}
     except Exception:
         loaded_names = set()
+        got_loaded = False
     if model not in loaded_names:
         dm = next((d for d in _disk_inference_models() if d["name"] == model), None)
         if dm:
@@ -344,6 +354,9 @@ def _chat_inference(message: str, model: str):
                     f"http://127.0.0.1:{port}/api/manage/load?{qs}", data=b"", method="POST"), timeout=300)
             except Exception as e:
                 raise HTTPException(500, f"Could not load fine-tuned model '{model}': {e}")
+        elif got_loaded:
+            # We reliably read the loaded set and there's no merged dir on disk either.
+            raise HTTPException(404, f"Fine-tuned model '{model}' is not loaded and was not found on disk.")
 
     payload = json.dumps({
         "model": model,

@@ -18,8 +18,9 @@ cd "$(dirname "$0")/.."
 if [ -x ".venv/bin/python" ]; then
   PY=".venv/bin/python"
 else
-  PY="$(command -v python3 || command -v python)"
+  PY="$(command -v python3 || command -v python || true)"
 fi
+[ -n "$PY" ] || { echo "[serve] no python interpreter found on PATH" >&2; exit 1; }
 
 : "${PORT:=7100}"
 : "${INFERENCE_PORT:=7200}"
@@ -27,6 +28,15 @@ fi
 echo "[serve] interpreter: $PY"
 echo "[serve] inference server -> :${INFERENCE_PORT}"
 "$PY" pipeline/inference_server.py &
+INF_PID=$!
 
 echo "[serve] web UI -> :${PORT}"
-exec "$PY" ui/app.py
+"$PY" ui/app.py &
+UI_PID=$!
+
+# Forward shutdown signals to BOTH children, then exit when the UI exits. (Using a
+# backgrounded UI + wait rather than `exec` so the inference server is also signalled
+# on `docker stop`, instead of being left for the kill-timeout to SIGKILL.)
+trap 'kill "$INF_PID" "$UI_PID" 2>/dev/null' TERM INT
+wait "$UI_PID" || true
+kill "$INF_PID" 2>/dev/null || true

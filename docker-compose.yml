@@ -48,7 +48,10 @@ services:
       - hf-cache:/root/.cache/huggingface   # base-model downloads persist across runs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:7100/')"]
+      # Probe both services — a dead inference server (:7200) must mark the container
+      # unhealthy, not just a dead UI (:7100). serve.sh backgrounds the inference
+      # server, so its failure wouldn't otherwise surface.
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:7100/'); u.urlopen('http://localhost:7200/api/health')"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -60,8 +63,11 @@ services:
     image: ollama/ollama:latest
     container_name: finetune-ollama
     profiles: ["ollama"]
-    ports:
-      - "11434:11434"
+    # Not published to the host on purpose: the platform reaches it in-network as
+    # `ollama:11434`, and publishing 11434 would clash with a host Ollama. To access
+    # it from the host, add `ports: ["11434:11434"]` (only if no host Ollama runs).
+    expose:
+      - "11434"
     volumes:
       - ollama-data:/root/.ollama   # pulled models persist across runs
     restart: unless-stopped
