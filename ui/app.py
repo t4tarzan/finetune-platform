@@ -86,7 +86,13 @@ from pipeline.logging_util import (
     export_log_path, list_logs, read_log_tail, setup_server_logging,
 )
 
-app = FastAPI(title="Fine-Tuning Platform")
+# Path prefix the UI is served under when behind a reverse proxy (e.g. an nginx
+# ingress at /finetune-platform). Empty = served at root (local / docker-compose).
+# The proxy strips this prefix before requests reach us, so our routes stay at "/".
+# Set via the BASE_PATH env (the Helm chart wires it from values.basePath).
+BASE_PATH = os.environ.get("BASE_PATH", "").rstrip("/")
+
+app = FastAPI(title="Fine-Tuning Platform", root_path=BASE_PATH)
 
 app.add_middleware(
     CORSMiddleware,
@@ -1524,7 +1530,7 @@ def get_docs_v1():
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return HTMLResponse(HTML_TEMPLATE)
+    return HTMLResponse(HTML_TEMPLATE.replace("__BASE_PATH__", BASE_PATH))
 
 
 # ── HTML Template ──────────────────────────────────────────
@@ -1976,6 +1982,9 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 </div>
 
 <script>
+// Path prefix injected by the server (e.g. "/finetune-platform" behind an ingress,
+// "" when served at root). Prepended to every API URL so calls route through the proxy.
+const BASE = "__BASE_PATH__";
 // ── Tab switching ──
 let currentModel = '';
 let trainingEventSource = null;
@@ -2012,7 +2021,7 @@ document.getElementById('ft-dataset-type').addEventListener('change', async func
   // Check available providers
   if (isBigset) {
     try {
-      const res = await fetch('/api/data/generate-status');
+      const res = await fetch(BASE+'/api/data/generate-status');
       const data = await res.json();
       const info = document.getElementById('ft-provider-info');
       const providers = Object.keys(data.providers_available || {});
@@ -2047,7 +2056,7 @@ async function generateDataset() {
   status.textContent = 'Generating dataset using internal models (no API keys needed)...';
 
   try {
-    const res = await fetch('/api/data/generate-from-desc?niche=' + encodeURIComponent(niche) + '&description=' + encodeURIComponent(desc) + '&count=30');
+    const res = await fetch(BASE+'/api/data/generate-from-desc?niche=' + encodeURIComponent(niche) + '&description=' + encodeURIComponent(desc) + '&count=30');
     const data = await res.json();
     if (data.rows_generated > 0) {
       status.style.background = 'rgba(63,185,80,0.15)';
@@ -2088,7 +2097,7 @@ function setDatasetReady(ready) {
 // ── Models ──
 async function loadModels() {
   try {
-    const res = await fetch('/api/models');
+    const res = await fetch(BASE+'/api/models');
     const data = await res.json();
     const select = document.getElementById('model-select');
     select.innerHTML = '';
@@ -2172,7 +2181,7 @@ async function sendMessage() {
   const provider = selOpt ? (selOpt.dataset.provider || '') : '';
   if (provider !== 'inference') {
     try {
-      const valRes = await fetch('/api/models/validate?model='+encodeURIComponent(currentModel));
+      const valRes = await fetch(BASE+'/api/models/validate?model='+encodeURIComponent(currentModel));
       const val = await valRes.json();
       if (!val.valid) {
         alert('⚠️ '+val.warnings.join('\\n'));
@@ -2190,7 +2199,7 @@ async function sendMessage() {
   const ld = document.createElement('div'); ld.className = 'message assistant'; ld.innerHTML = '<div class="loading"></div> Thinking...'; ca.appendChild(ld);
   ca.scrollTop = ca.scrollHeight;
   try {
-    const r = await fetch('/api/chat?message='+encodeURIComponent(msg)+'&model='+encodeURIComponent(currentModel));
+    const r = await fetch(BASE+'/api/chat?message='+encodeURIComponent(msg)+'&model='+encodeURIComponent(currentModel));
     if (!r.ok) { const err = await r.json(); ld.innerHTML = '⚠️ Error: '+(err.detail||'Unknown error'); ca.scrollTop = ca.scrollHeight; document.getElementById('send-btn').disabled = false; return; }
     const d = await r.json();
     ld.innerHTML = d.response;
@@ -2203,7 +2212,7 @@ async function sendMessage() {
 // ── Leaderboard ──
 async function loadLeaderboard() {
   try {
-    const res = await fetch('/api/leaderboard'); const data = await res.json();
+    const res = await fetch(BASE+'/api/leaderboard'); const data = await res.json();
     const c = document.getElementById('leaderboard-content'); const niches = Object.keys(data);
     if (!niches.length) { c.innerHTML = '<div style="color:var(--text-secondary);font-size:12px">No benchmarks yet.</div>'; return; }
     c.innerHTML = niches.map(n => {
@@ -2240,7 +2249,7 @@ async function loadDatasets() {
   try {
     const sel = document.getElementById('ft-dataset-pick');
     if (!sel) return;
-    const res = await fetch('/api/datasets');
+    const res = await fetch(BASE+'/api/datasets');
     const data = await res.json();
     sel.innerHTML = '<option value="">— Select a dataset —</option>';
     (data.datasets || []).forEach(d => {
@@ -2267,7 +2276,7 @@ async function loadAdapters() {
     const sel = document.getElementById('ft-resume-adapter');
     if (!sel) return;
     const keep = sel.value;
-    const res = await fetch('/api/adapters');
+    const res = await fetch(BASE+'/api/adapters');
     const data = await res.json();
     sel.innerHTML = '<option value="">None — train fresh from base model</option>';
     (data.adapters || []).forEach(a => {
@@ -2290,7 +2299,7 @@ async function startTraining() {
   lossData = [];
 
   try {
-    const res = await fetch('/api/train/start', {
+    const res = await fetch(BASE+'/api/train/start', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(cfg),
@@ -2302,7 +2311,7 @@ async function startTraining() {
 
 function connectTrainingSSE() {
   if (trainingEventSource) trainingEventSource.close();
-  trainingEventSource = new EventSource('/api/train/progress');
+  trainingEventSource = new EventSource(BASE+'/api/train/progress');
 
   trainingEventSource.onmessage = function(e) {
     try {
@@ -2317,7 +2326,7 @@ function connectTrainingSSE() {
     setTimeout(() => {
       if (trainingEventSource) trainingEventSource.close();
       // Check status
-      fetch('/api/train/status').then(r=>r.json()).then(s => {
+      fetch(BASE+'/api/train/status').then(r=>r.json()).then(s => {
         if (s.status === 'running') { connectTrainingSSE(); return; }
         // The run finished (or the connection dropped around the terminal event):
         // render the final phase/message so the UI doesn't snap back to idle.
@@ -2358,7 +2367,7 @@ function showTrainMetrics(lossHistory, m) {
 
 async function initTrainState() {
   try {
-    const s = await fetch('/api/train/status').then(r => r.json());
+    const s = await fetch(BASE+'/api/train/status').then(r => r.json());
     if (s.status && s.status !== 'idle') {
       showTrainMetrics(s.loss_history, {loss: s.loss, lr: s.learning_rate, epoch: s.epoch, eta: s.eta_seconds, pct: s.progress_percent});
       if (s.status === 'running') {
@@ -2385,7 +2394,7 @@ async function initTrainState() {
 
 async function loadTrainHistory() {
   try {
-    const res = await fetch('/api/train/history?limit=20');
+    const res = await fetch(BASE+'/api/train/history?limit=20');
     const data = await res.json();
     const el = document.getElementById('train-history-entries');
     const runs = data.runs || [];
@@ -2497,7 +2506,7 @@ function updateTrainingUI(data) {
 async function stopTraining() {
   const save = confirm('Save checkpoint before stopping?');
   document.getElementById('ft-message').textContent = 'Stopping...';
-  await fetch('/api/train/stop?save='+save, {method:'POST'});
+  await fetch(BASE+'/api/train/stop?save='+save, {method:'POST'});
   if (save) loadModels();
   loadTrainHistory();
 }
@@ -2523,7 +2532,7 @@ async function exportModel(btn) {
   if (btn) { btn.disabled = true; btn.style.opacity = 0.5; }
   document.getElementById('ft-message').textContent = 'Exporting model… (this can take a minute)';
   try {
-    const res = await fetch('/api/export?niche='+encodeURIComponent(niche)+'&adapter_path='+encodeURIComponent(adapterPath), {method:'POST'});
+    const res = await fetch(BASE+'/api/export?niche='+encodeURIComponent(niche)+'&adapter_path='+encodeURIComponent(adapterPath), {method:'POST'});
     if (!res.ok) {
       let msg = 'Export failed ('+res.status+')';
       try { const j = await res.json(); if (j.detail) msg = 'Export failed: '+j.detail; } catch (e) {}
@@ -2606,7 +2615,7 @@ let docsTreeData = [];
 
 async function loadDocs() {
   try {
-    const res = await fetch('/api/docs/v1');
+    const res = await fetch(BASE+'/api/docs/v1');
     const tree = await res.json();
     docsTreeData = tree;
     renderDocsTree(tree);
@@ -2726,7 +2735,7 @@ async function chatWithServedModel(name) {
 
 async function checkInferenceStatus() {
   try {
-    const res = await fetch('/api/inference/status');
+    const res = await fetch(BASE+'/api/inference/status');
     const data = await res.json();
     const dot = document.getElementById('inference-dot');
     const label = document.getElementById('inference-label');
@@ -2760,12 +2769,12 @@ async function checkInferenceStatus() {
 async function startInference() {
   document.getElementById('inf-start-btn').textContent = 'Starting...';
   document.getElementById('inf-start-btn').disabled = true;
-  await fetch('/api/inference/start', {method:'POST'});
+  await fetch(BASE+'/api/inference/start', {method:'POST'});
   setTimeout(checkInferenceStatus, 3000);
 }
 
 async function stopInference() {
-  await fetch('/api/inference/stop', {method:'POST'});
+  await fetch(BASE+'/api/inference/stop', {method:'POST'});
   checkInferenceStatus();
 }
 
@@ -2773,7 +2782,7 @@ async function loadInferenceModel() {
   const path = document.getElementById('inf-model-path').value;
   const name = path.split('/').pop();
   document.getElementById('inf-model-path').disabled = true;
-  await fetch('/api/inference/load?model_path='+encodeURIComponent(path)+'&model_name='+encodeURIComponent(name), {method:'POST'});
+  await fetch(BASE+'/api/inference/load?model_path='+encodeURIComponent(path)+'&model_name='+encodeURIComponent(name), {method:'POST'});
   setTimeout(checkInferenceStatus, 3000);
   document.getElementById('inf-model-path').disabled = false;
 }

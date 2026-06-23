@@ -100,6 +100,7 @@ The bundled image is **CPU-only**. For GPU:
 | `resources.requests/limits` | 1–3 CPU / 4–12Gi | size to the node + model |
 | `service.type` | `ClusterIP` | or `LoadBalancer` |
 | `ingress.enabled` | `false` | UI ingress (`:7100`) |
+| `basePath` | `""` | serve under a URL sub-path (e.g. `/finetune-platform`) on shared nginx — sets `BASE_PATH` + auto rewrite |
 | `ollama.enabled` | `false` | base-model chat sidecar |
 
 Uninstall: `helm uninstall ftp -n finetune` (PVCs remain — delete them by hand to drop data).

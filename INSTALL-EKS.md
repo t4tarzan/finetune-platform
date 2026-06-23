@@ -105,14 +105,23 @@ helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-valu
 kubectl -n finetune get svc finetune-platform -w        # grab EXTERNAL-IP
 ```
 
-**Ingress (ALB example):**
+**Ingress — own host (ALB example):**
 ```bash
 helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
   --set ingress.enabled=true --set ingress.className=alb \
   --set ingress.host=finetune.example.com
 ```
-> The app uses absolute `/api/...` URLs, so give it its **own host** (path `/`).
-> Don't serve it under a sub-path with a rewrite — its API calls won't resolve.
+
+**Ingress — shared nginx under a sub-path** (e.g. `https://<host>/finetune-platform`):
+```bash
+helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
+  --set ingress.enabled=true --set ingress.className=nginx \
+  --set basePath=/finetune-platform
+```
+> `basePath` makes the app serve under that prefix: it sets `BASE_PATH` in the pod
+> (so the UI prefixes every API call) and auto-configures the nginx ingress (regex
+> path + `rewrite-target` that strips the prefix). Leave `basePath` empty for a
+> dedicated host or LoadBalancer.
 
 ---
 

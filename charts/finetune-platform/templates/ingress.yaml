@@ -1,15 +1,27 @@
 {{- if .Values.ingress.enabled -}}
 {{- $full := include "finetune-platform.fullname" . -}}
+{{- /* When basePath is set, serve under that sub-path on nginx: a regex path that
+       captures the remainder + a rewrite-target that strips the prefix so requests
+       reach the app's "/" routes. Otherwise use the plain ingress.path. */ -}}
+{{- $path := .Values.ingress.path -}}
+{{- $pathType := .Values.ingress.pathType -}}
+{{- if .Values.basePath -}}
+{{- $path = printf "%s(/|$)(.*)" .Values.basePath -}}
+{{- $pathType = "ImplementationSpecific" -}}
+{{- end -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ $full }}
   labels:
     {{- include "finetune-platform.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
   annotations:
+    {{- if .Values.basePath }}
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- end }}
 spec:
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
@@ -24,8 +36,8 @@ spec:
       {{- end }}
       http:
         paths:
-          - path: {{ .Values.ingress.path }}
-            pathType: {{ .Values.ingress.pathType }}
+          - path: {{ $path | quote }}
+            pathType: {{ $pathType }}
             backend:
               service:
                 name: {{ $full }}

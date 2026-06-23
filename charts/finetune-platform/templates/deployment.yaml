@@ -74,6 +74,10 @@ spec:
               value: {{ .Values.ports.inference | quote }}
             - name: HF_HOME
               value: /root/.cache/huggingface
+            {{- if .Values.basePath }}
+            - name: BASE_PATH        # UI prefixes its API calls with this (sub-path serving)
+              value: {{ .Values.basePath | quote }}
+            {{- end }}
             {{- if .Values.ollama.enabled }}
             - name: OLLAMA_HOST
               value: "http://localhost:11434"

@@ -27,6 +27,14 @@ ports:
   ui: 7100                  # web UI (chat + train)
   inference: 7200           # OpenAI-compatible inference server
 
+# Serve the UI under a URL sub-path behind a reverse proxy (e.g. "/finetune-platform"
+# on a shared nginx ingress). "" = served at root (port-forward / LoadBalancer /
+# own host). When set, it's passed to the app as BASE_PATH (so the UI prefixes all
+# its API calls) AND, if ingress.enabled, the ingress is auto-configured for nginx
+# (regex path + rewrite-target that strips the prefix). For a dedicated host or ALB,
+# leave this "" and use ingress.host instead.
+basePath: ""
+
 # Sized for a modest CPU node (e.g. m5.xlarge = 4 vCPU / 16 GB, no GPU).
 # Good for 0.5B–1.5B with small datasets. Raise for larger models; CPU training is
 # slow regardless — use a GPU node group + a CUDA image for real throughput.
