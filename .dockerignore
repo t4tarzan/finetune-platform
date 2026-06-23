@@ -6,8 +6,16 @@ __pycache__/
 .cache/
 .huggingface/
 
-# Runtime state — provided via volume mounts at runtime, not the image
-data/
+# Runtime state — provided via volume mounts at runtime, not the image.
+# EXCEPTION: bake the bundled demo datasets into the image so the chart's
+# init container can seed them into the (otherwise empty) data PVC on deploy,
+# making them selectable in the Train dataset dropdown.
+data/*
+!data/sre-pods
+data/sre-pods/*
+!data/sre-pods/dataset_v1.jsonl
+!data/sre-pods/dataset_v2.jsonl
+!data/example_train.jsonl
 models/
 logs/
 benchmarks/

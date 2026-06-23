@@ -6,10 +6,12 @@
 # at 1 (see comment below).
 
 # --- Container image -----------------------------------------------------------
-# REQUIRED: build the repo's Dockerfile and push to a registry your cluster can
-# pull (e.g. ECR/GHCR), then set repository+tag. See charts/finetune-platform/README.md.
+# Default = the image published by .github/workflows/docker-publish.yml (GHCR, built
+# with the repo's GITHUB_TOKEN — no PAT needed). Override for your own registry (ECR).
+# NOTE: GHCR packages are private by default — make the package public, or set an
+# imagePullSecret below, so the cluster can pull it.
 image:
-  repository: ""            # e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/finetune-platform
+  repository: "ghcr.io/t4tarzan/finetune-platform"
   tag: "latest"
   pullPolicy: IfNotPresent
 imagePullSecrets: []        # e.g. [{ name: ecr-creds }]
