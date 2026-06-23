@@ -871,6 +871,79 @@ def data_cards():
     """List the preset cards (title/category/desc) for the chat quick-action strip."""
     return {"cards": [{k: c[k] for k in ("id", "title", "category", "desc")} for c in PRESET_CARDS]}
 
+# Tables exposed to the text-to-SQL prompt (the demo-useful subset; full schema would
+# blow the context of a small local model).
+ASK_TABLES = ["predictions", "alert_log", "kubernetes_events", "kubernetes_pod_status",
+              "kubernetes_node_status", "comprehensive_metrics", "ml_use_cases",
+              "expert_feedback", "sop_gaps"]
+_SCHEMA_CACHE = {"text": None}
+
+def _schema_summary() -> str:
+    if _SCHEMA_CACHE["text"]:
+        return _SCHEMA_CACHE["text"]
+    ds = get_datastore(); have = set(ds.list_tables()); lines = []
+    for t in ASK_TABLES:
+        if t not in have:
+            continue
+        try:
+            cols = [c["column"] for c in ds.describe(t)]
+            lines.append(f"{t}({', '.join(cols)})")
+        except Exception:
+            pass
+    _SCHEMA_CACHE["text"] = "\n".join(lines)
+    return _SCHEMA_CACHE["text"]
+
+import re as _re
+def _extract_sql(text: str) -> str:
+    """Pull the SQL out of a model reply (strip prose/markdown fences)."""
+    m = _re.search(r"```(?:sql)?\s*(.+?)```", text, _re.S | _re.I)
+    sql = (m.group(1) if m else text).strip()
+    m2 = _re.search(r"(select\b.+)", sql, _re.S | _re.I)
+    sql = (m2.group(1) if m2 else sql).strip().rstrip(";").strip()
+    return sql
+
+_BLOCK = _re.compile(r"\b(insert|update|delete|drop|alter|create|attach|copy|pragma|"
+                     r"truncate|replace|grant|call|export)\b", _re.I)
+
+@app.get("/api/data/ask")
+def data_ask(question: str = Query(...), model: str = Query(...)):
+    """Free-form data chat: the model writes a read-only SQL query over the local
+    observability tables, we run it, and return the SQL + rows. Guardrails: SELECT
+    only, blocked keywords rejected, auto-LIMIT."""
+    schema = _schema_summary()
+    prompt = (
+        "You are a DuckDB SQL assistant for Kubernetes SRE data. Given the tables below, "
+        "write ONE read-only SELECT query that answers the question. Output ONLY the SQL, "
+        "no prose.\n\nTABLES:\n" + schema + "\n\n"
+        "Examples:\n"
+        "Q: how many pods are at high or critical risk?\n"
+        "SQL: SELECT count(DISTINCT pod_name) FROM predictions WHERE risk_level IN ('critical','high');\n"
+        "Q: top 5 namespaces by alert count\n"
+        "SQL: SELECT namespace, count(*) c FROM alert_log GROUP BY 1 ORDER BY c DESC LIMIT 5;\n\n"
+        f"Q: {question}\nSQL:")
+    try:
+        reply = chat(message=prompt, model=model).get("response", "")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Model error: {e}")
+    sql = _extract_sql(reply)
+    if not sql.lower().startswith("select"):
+        raise HTTPException(422, f"Could not produce a SQL query. Model said: {reply[:200]}")
+    if _BLOCK.search(sql):
+        raise HTTPException(400, "Only read-only SELECT queries are allowed.")
+    if "limit" not in sql.lower():
+        sql += " LIMIT 100"
+    ds = get_datastore()
+    try:
+        rows = ds.query(sql)
+    except Exception as e:
+        raise HTTPException(422, f"Query failed: {e}. SQL was: {sql}")
+    cols = list(rows[0].keys()) if rows else []
+    data = [[("" if r[c] is None else str(r[c])) for c in cols] for r in rows]
+    return {"question": question, "sql": sql, "columns": cols, "rows": data, "count": len(data)}
+
+
 @app.get("/api/data/card")
 def data_card(id: str = Query(...)):
     """Run a preset card's SQL against the local observability tables and return rows."""
@@ -1931,8 +2004,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div class="key-hint" style="font-size:12px;padding:4px 8px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">Cards run against your bundled observability tables (no model needed)</div>
       </div>
     </div>
-    <div class="input-area">
-      <input type="text" id="message-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()"/>
+    <div class="input-area" style="display:flex;align-items:center;gap:8px;">
+      <label title="Answer from your observability tables via SQL (text-to-SQL)" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-secondary);white-space:nowrap;cursor:pointer;">
+        <input type="checkbox" id="data-mode"/> 🗄️ Query data
+      </label>
+      <input type="text" id="message-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendMessage()" style="flex:1;"/>
       <button id="send-btn" onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -2278,11 +2354,44 @@ function switchModel() {
   document.getElementById('current-model-label').textContent = currentModel || 'no model selected';
 }
 
+// ── Data-mode chat: model writes SQL over the local tables, we run it ──
+async function askData(msg) {
+  const ca = document.getElementById('chat-area');
+  const empty = ca.querySelector('.empty-state'); if (empty) empty.remove();
+  const ud = document.createElement('div'); ud.className='message user'; ud.textContent = msg; ca.appendChild(ud);
+  const ld = document.createElement('div'); ld.className='message assistant';
+  ld.innerHTML = '<div class="loading"></div> Writing SQL & querying…'; ca.appendChild(ld); ca.scrollTop = ca.scrollHeight;
+  document.getElementById('send-btn').disabled = true;
+  try {
+    const r = await fetch(BASE+'/api/data/ask?question='+encodeURIComponent(msg)+'&model='+encodeURIComponent(currentModel));
+    const d = await r.json();
+    if (!r.ok) { ld.innerHTML = '⚠️ '+(d.detail||'query failed'); }
+    else {
+      let html = '<div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">SQL</div>'+
+        '<pre style="margin:0 0 8px;padding:8px;font-size:11px;white-space:pre-wrap">'+d.sql.replace(/</g,'&lt;')+'</pre>'+
+        '<div style="font-weight:600;margin-bottom:6px">'+d.count+' rows</div>';
+      if (d.count) {
+        html += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px;width:100%"><tr>'+
+          d.columns.map(c=>'<th style="text-align:left;border-bottom:1px solid var(--border);padding:4px 8px;color:var(--text-secondary)">'+c+'</th>').join('')+'</tr>'+
+          d.rows.slice(0,20).map(row=>'<tr>'+row.map(v=>'<td style="padding:4px 8px;border-bottom:1px solid var(--surface2)">'+String(v).replace(/</g,'&lt;')+'</td>').join('')+'</tr>').join('')+'</table></div>';
+      }
+      ld.innerHTML = html;
+    }
+  } catch(e) { ld.innerHTML = '⚠️ '+e.message; }
+  document.getElementById('send-btn').disabled = false;
+  ca.scrollTop = ca.scrollHeight;
+}
+
 // ── Chat with model validation ──
 async function sendMessage() {
   const input = document.getElementById('message-input');
   const msg = input.value.trim();
   if (!msg || !currentModel) return;
+
+  // Data mode → text-to-SQL over the local observability tables.
+  if (document.getElementById('data-mode') && document.getElementById('data-mode').checked) {
+    input.value = ''; await askData(msg); return;
+  }
 
   // Validate model type before sending — but skip it for fine-tuned models served by
   // the inference server (they're chat models; the name heuristic would mis-flag a
