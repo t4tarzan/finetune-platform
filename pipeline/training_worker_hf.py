@@ -80,12 +80,17 @@ def run(config: dict):
     # a fresh LoRA. We load it onto the exact base it was trained on (recorded in
     # base_model.txt) so the weights line up.
     resume_adapter = config.get("resume_adapter", "") or ""
-    resume_valid = bool(resume_adapter) and os.path.exists(
-        os.path.join(resume_adapter, "adapter_config.json"))
+    # Require the PEFT weight file, not just adapter_config.json: an MLX-trained
+    # adapter also has an adapter_config.json (but a different schema + adapters.safetensors),
+    # and /api/adapters lists both kinds — without this guard, picking an MLX adapter
+    # here would pass validation and then crash PeftModel.from_pretrained.
+    resume_valid = bool(resume_adapter) and os.path.isfile(
+        os.path.join(resume_adapter, "adapter_model.safetensors"))
     if resume_valid:
         marker = os.path.join(resume_adapter, "base_model.txt")
         if os.path.exists(marker):
-            recorded = open(marker).read().strip()
+            with open(marker) as f:
+                recorded = f.read().strip()
             if recorded:
                 base_model = recorded
 
@@ -175,8 +180,12 @@ def run(config: dict):
         if resume_valid:
             # Load the previous adapter as trainable and keep fine-tuning it.
             model = PeftModel.from_pretrained(model, resume_adapter, is_trainable=True)
+            # LoRA rank/alpha/targets come from the existing adapter's config — the
+            # UI's rank/alpha inputs don't apply when continuing an adapter (its
+            # geometry is fixed). Said explicitly so the inherited values aren't a surprise.
             emit("status", phase="lora_resumed",
-                 message=f"Continuing training from adapter: {resume_adapter}")
+                 message=f"Continuing training from adapter: {resume_adapter} "
+                         f"(LoRA rank/alpha inherited from it; the form's rank/alpha are ignored)")
         else:
             peft_config = LoraConfig(
                 r=lora_rank, lora_alpha=lora_alpha, lora_dropout=0.0,
