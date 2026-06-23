@@ -99,6 +99,33 @@ leaderboard = BenchmarkLeaderboard()
 train_manager = TrainingManager()
 config = load_train_config()
 
+# Ollama is reached over its HTTP API (no `ollama` CLI needed in the container).
+# Native installs default to localhost; in Docker, compose points this at the host
+# or a sidecar Ollama (e.g. http://host.docker.internal:11434).
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+if not OLLAMA_HOST.startswith("http"):
+    OLLAMA_HOST = "http://" + OLLAMA_HOST
+
+
+def _disk_inference_models():
+    """Exported (merged) models present on disk that the inference server can serve.
+
+    Returns ``[{"name", "path"}]`` where ``name`` is the served model id. The inference
+    server starts empty after a restart, so these are listed (and lazy-loaded on first
+    chat) — otherwise previously fine-tuned models would vanish from the picker.
+    """
+    export_path = config.get("paths", {}).get("export_path", "models/gguf")
+    out = []
+    try:
+        for d in sorted(os.listdir(export_path)):
+            full = os.path.join(export_path, d)
+            if d.endswith("_merged") and os.path.isdir(full):
+                niche = d[: -len("_merged")]
+                out.append({"name": niche.replace("_", "-").lower(), "path": os.path.abspath(full)})
+    except FileNotFoundError:
+        pass
+    return out
+
 
 # ── Request models ──────────────────────────────────────────
 
@@ -186,41 +213,44 @@ def _detect_model_type(name: str) -> dict:
 
 @app.get("/api/models")
 def list_models():
+    import urllib.request
     models = []
-    try:
-        result = subprocess.run(
-            ["ollama", "list"],
-            capture_output=True, text=True, timeout=10
-        )
-        if result.returncode == 0:
-            lines = result.stdout.strip().split("\n")[1:]
-            for line in lines:
-                parts = line.split()
-                if parts:
-                    info = _detect_model_type(parts[0])
-                    models.append(info)
-    except (FileNotFoundError, subprocess.TimeoutExpired):
-        pass
 
-    # Also include models served by the in-app inference server (:7200). On Linux,
-    # exported models are served there rather than registered with Ollama, so they
-    # would otherwise be invisible in the chat model picker.
+    # Base models from Ollama via its HTTP API (works in a container that points
+    # OLLAMA_HOST at a host/sidecar Ollama — no `ollama` CLI needed in the image).
     try:
-        import urllib.request
-        port = config.get("ports", {}).get("inference_api", 7200)
-        resp = urllib.request.urlopen(f"http://127.0.0.1:{port}/api/manage/list", timeout=2)
-        served = json.loads(resp.read()).get("models", {})
-        existing = {m["id"] for m in models}
-        for name in served:
-            if name in existing:
-                continue
-            info = _detect_model_type(name)
-            info["provider"] = "inference"
-            info["name"] = f"{name} (served :{port})"
-            info["icon"] = "🚀"
-            models.append(info)
+        resp = urllib.request.urlopen(f"{OLLAMA_HOST}/api/tags", timeout=3)
+        for m in json.loads(resp.read()).get("models", []):
+            name = m.get("name")
+            if name:
+                models.append(_detect_model_type(name))
     except Exception:
         pass
+
+    existing = {m["id"] for m in models}
+
+    # Models currently loaded in the in-app inference server (:7200).
+    inf_port = config.get("ports", {}).get("inference_api", 7200)
+    loaded = []
+    try:
+        resp = urllib.request.urlopen(f"http://127.0.0.1:{inf_port}/api/manage/list", timeout=2)
+        loaded = list(json.loads(resp.read()).get("models", {}).keys())
+    except Exception:
+        pass
+
+    # Fine-tuned models served by the inference server: those loaded now PLUS those
+    # exported to disk in a previous run. The server starts empty after a restart, so
+    # the on-disk ones are shown here and lazy-loaded on first chat (see _chat_inference)
+    # — otherwise your fine-tuned models would disappear from the picker on restart.
+    inf_names = list(dict.fromkeys(loaded + [d["name"] for d in _disk_inference_models()]))
+    for name in inf_names:
+        if name in existing:
+            continue
+        info = _detect_model_type(name)
+        info["provider"] = "inference"
+        info["name"] = f"{name} (fine-tuned)"
+        info["icon"] = "🚀"
+        models.append(info)
 
     return {"models": models}
 
@@ -249,49 +279,52 @@ def chat(
     if not model:
         raise HTTPException(400, "model required")
 
-    # Validate model type
-    validation = validate_model(model)
-    if not validation["valid"]:
-        raise HTTPException(400, validation["warnings"][0] if validation["warnings"] else "Model incompatible with chat")
-
     models = list_models().get("models", [])
     entry = next((m for m in models if m["id"] == model), None)
     provider = entry["provider"] if entry else "ollama"
 
+    # A fine-tuned model you exported is a chat model — route it straight to the
+    # inference server. We skip the name-heuristic validate_model() here, which would
+    # otherwise mis-flag a niche whose name happens to contain 'audio'/'embed'/etc.
     if provider == "inference":
         return _chat_inference(message, model)
-    elif provider == "ollama":
+
+    # For base/Ollama models, block obviously-incompatible types (embeddings, audio).
+    validation = validate_model(model)
+    if not validation["valid"]:
+        raise HTTPException(400, validation["warnings"][0] if validation["warnings"] else "Model incompatible with chat")
+
+    if provider == "ollama":
         return _chat_ollama(message, model, stream)
     else:
         return _chat_cmd(message, model)
 
 
 def _chat_ollama(message: str, model: str, stream: bool):
-    if stream:
-        from fastapi.responses import StreamingResponse
-        async def gen():
-            proc = subprocess.Popen(
-                ["ollama", "run", model],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE, text=True,
-            )
-            proc.stdin.write(message + "\n")
-            proc.stdin.close()
-            for line in proc.stdout:
-                yield f"data: {json.dumps({'content': line})}\n\n"
-            proc.wait()
-            yield "data: [DONE]\n\n"
-        return StreamingResponse(gen(), media_type="text/event-stream")
-
+    """Chat with an Ollama base model via the Ollama HTTP API (OLLAMA_HOST)."""
+    import urllib.request
+    payload = json.dumps({
+        "model": model,
+        "messages": [{"role": "user", "content": message}],
+        "stream": False,
+    }).encode()
     start = time.time()
-    result = subprocess.run(
-        ["ollama", "run", model, message],
-        capture_output=True, text=True, timeout=120
-    )
-    if result.returncode != 0:
-        raise HTTPException(500, result.stderr[:200])
+    try:
+        req = urllib.request.Request(
+            f"{OLLAMA_HOST}/api/chat",
+            data=payload, headers={"Content-Type": "application/json"}, method="POST",
+        )
+        resp = urllib.request.urlopen(req, timeout=180)
+        data = json.loads(resp.read())
+    except Exception as e:
+        raise HTTPException(500, f"Ollama ({OLLAMA_HOST}) error: {e}")
+    # Ollama reports some failures (e.g. model not pulled) as HTTP 200 with an
+    # {"error": ...} body — surface it instead of returning a blank reply.
+    if data.get("error"):
+        raise HTTPException(500, f"Ollama error: {data['error']}")
+    text = (data.get("message") or {}).get("content") or ""
     return {
-        "response": result.stdout.strip(), "model": model,
+        "response": text.strip(), "model": model,
         "latency_ms": round((time.time() - start) * 1000),
     }
 
@@ -300,7 +333,31 @@ def _chat_inference(message: str, model: str):
     """Chat with a model served by the in-app inference server (:7200) via its
     OpenAI-compatible endpoint. Used for models exported on Linux (not in Ollama)."""
     import urllib.request
+    import urllib.parse
     port = config.get("ports", {}).get("inference_api", 7200)
+
+    # Lazy-load the merged model if the inference server doesn't have it in memory
+    # (e.g. after a restart — it's still on disk). Match by served name.
+    got_loaded = True
+    try:
+        cur = json.loads(urllib.request.urlopen(f"http://127.0.0.1:{port}/v1/models", timeout=5).read())
+        loaded_names = {m.get("id") for m in cur.get("data", [])}
+    except Exception:
+        loaded_names = set()
+        got_loaded = False
+    if model not in loaded_names:
+        dm = next((d for d in _disk_inference_models() if d["name"] == model), None)
+        if dm:
+            qs = urllib.parse.urlencode({"model_path": dm["path"], "model_name": model})
+            try:
+                urllib.request.urlopen(urllib.request.Request(
+                    f"http://127.0.0.1:{port}/api/manage/load?{qs}", data=b"", method="POST"), timeout=300)
+            except Exception as e:
+                raise HTTPException(500, f"Could not load fine-tuned model '{model}': {e}")
+        elif got_loaded:
+            # We reliably read the loaded set and there's no merged dir on disk either.
+            raise HTTPException(404, f"Fine-tuned model '{model}' is not loaded and was not found on disk.")
+
     payload = json.dumps({
         "model": model,
         "messages": [{"role": "user", "content": message}],
@@ -411,6 +468,10 @@ async def grpo_start(req: StartGRPORequest):
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         ".venv", "bin", "python",
     )
+    # Fall back to the current interpreter when there is no project venv
+    # (e.g. inside the Docker image, where deps are installed system-wide).
+    if not os.path.exists(venv_python):
+        venv_python = sys.executable
     worker_script = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "pipeline", "grpo_trainer.py",
@@ -567,6 +628,10 @@ def inference_start():
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         ".venv", "bin", "python",
     )
+    # Fall back to the current interpreter when there is no project venv
+    # (e.g. inside the Docker image, where deps are installed system-wide).
+    if not os.path.exists(venv_python):
+        venv_python = sys.executable
     worker = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         "pipeline", "inference_server.py",
@@ -1971,9 +2036,12 @@ async function loadModels() {
     const select = document.getElementById('model-select');
     select.innerHTML = '';
 
-    // Group: chat models first, then vision/code, then warn about others
-    const chat = data.models.filter(m => m.model_type === 'chat' || m.model_type === 'vision' || m.model_type === 'code');
-    const other = data.models.filter(m => m.model_type !== 'chat' && m.model_type !== 'vision' && m.model_type !== 'code');
+    // Group: chat models first, then vision/code, then warn about others. Fine-tuned
+    // models (inference provider) are always chat models — never demote them to
+    // "Other" just because their niche name matched a heuristic (e.g. contains 'audio').
+    const isChat = m => m.provider === 'inference' || m.model_type === 'chat' || m.model_type === 'vision' || m.model_type === 'code';
+    const chat = data.models.filter(isChat);
+    const other = data.models.filter(m => !isChat(m));
 
     // Add a default "select a model" option
     const def = document.createElement('option'); def.value = ''; def.textContent = '— Select a model —';
@@ -1984,7 +2052,7 @@ async function loadModels() {
       chat.forEach(m => {
         const o = document.createElement('option'); o.value = m.id;
         o.textContent = (m.icon||'💬')+' '+m.name;
-        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||'';
+        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||''; o.dataset.provider = m.provider||'';
         og.appendChild(o);
       });
       select.appendChild(og);
@@ -1994,7 +2062,7 @@ async function loadModels() {
       other.forEach(m => {
         const o = document.createElement('option'); o.value = m.id;
         o.textContent = (m.icon||'❓')+' '+m.name;
-        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||'';
+        o.dataset.modelType = m.model_type; o.dataset.warning = m.warning||''; o.dataset.provider = m.provider||'';
         og.appendChild(o);
       });
       select.appendChild(og);
@@ -2040,15 +2108,21 @@ async function sendMessage() {
   const msg = input.value.trim();
   if (!msg || !currentModel) return;
 
-  // Validate model type before sending
-  try {
-    const valRes = await fetch('/api/models/validate?model='+encodeURIComponent(currentModel));
-    const val = await valRes.json();
-    if (!val.valid) {
-      alert('⚠️ '+val.warnings.join('\\n'));
-      return;
-    }
-  } catch(e) { /* proceed anyway */ }
+  // Validate model type before sending — but skip it for fine-tuned models served by
+  // the inference server (they're chat models; the name heuristic would mis-flag a
+  // niche named e.g. 'audio-*'). This mirrors the backend chat() routing.
+  const selOpt = document.getElementById('model-select').selectedOptions[0];
+  const provider = selOpt ? (selOpt.dataset.provider || '') : '';
+  if (provider !== 'inference') {
+    try {
+      const valRes = await fetch('/api/models/validate?model='+encodeURIComponent(currentModel));
+      const val = await valRes.json();
+      if (!val.valid) {
+        alert('⚠️ '+val.warnings.join('\\n'));
+        return;
+      }
+    } catch(e) { /* proceed anyway */ }
+  }
 
   input.value = '';
   document.getElementById('send-btn').disabled = true;

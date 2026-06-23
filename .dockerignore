@@ -1,0 +1,26 @@
+# Virtualenvs / caches (never bake into the image)
+.venv/
+venv/
+__pycache__/
+*.pyc
+.cache/
+.huggingface/
+
+# Runtime state — provided via volume mounts at runtime, not the image
+data/
+models/
+logs/
+benchmarks/
+*.log
+
+# Repo metadata / local-only files
+.git/
+.gitignore
+.dockerignore
+*.mp4
+*.webm
+finetune-job-explained*.html
+BIGSET_NOTES.md
+.env
+.env.local
+node_modules/

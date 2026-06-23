@@ -44,6 +44,32 @@ The platform runs on **macOS (Apple Silicon)** and **Linux** from a single codeb
 
 The backend is selected automatically at runtime (`mlx_available()` — true only with working Apple Metal). `requirements.txt` uses environment markers so platform-native deps (MLX) install **only** on macOS and never block a Linux install. GRPO is currently MLX-only and reports a clear "not available" message on Linux.
 
+### Two ways to deploy
+
+| Mode | Command | Backend |
+|---|---|---|
+| **Native** | `make serve` | **MLX/Metal on Apple Silicon**, HuggingFace/CPU on Linux |
+| **Docker** | `make docker-up` (or `docker compose up -d --build`) | **HuggingFace/CPU on every host** |
+
+Both start the web UI (`:7100`) and inference server (`:7200`) together. Your
+fine-tuned models always appear in the chat picker (served by `:7200`).
+
+**Ollama (base-model chat) with Docker — your choice:**
+
+| | Command | Ollama |
+|---|---|---|
+| **Host Ollama** (default) | `make docker-up` | uses an Ollama running on your machine |
+| **Bundled Ollama** (self-contained) | `make docker-up-ollama` | runs Ollama in a container and auto-pulls `qwen2.5:0.5b` |
+
+Pull a different/extra set into the bundled Ollama with
+`OLLAMA_PULL_MODELS="qwen2.5:0.5b qwen2.5:7b" make docker-up-ollama`. If no Ollama is
+reachable, base models simply don't list — fine-tuned models still do.
+
+> ⚠️ **Docker never uses MLX/Metal — even on a Mac.** Docker containers run a Linux
+> VM with no access to Apple's Metal GPU, so a container always uses the CPU backend.
+> **On Apple Silicon, use `make serve` (native) for MLX/Metal acceleration**; use
+> Docker only when you want a portable CPU deployment (e.g. on Linux/servers).
+
 ### Prerequisites
 
 - **macOS (Apple Silicon)** *or* **Linux** (x86_64 / arm64)
