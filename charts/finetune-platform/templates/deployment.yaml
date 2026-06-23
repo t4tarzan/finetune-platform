@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "finetune-platform.fullname" . }}
+  labels:
+    {{- include "finetune-platform.labels" . | nindent 4 }}
+spec:
+  # Single, stateful instance. RWO volumes can't be shared, so we never run two.
+  replicas: 1
+  strategy:
+    type: Recreate          # release the RWO PVCs before the new pod claims them
+  selector:
+    matchLabels:
+      {{- include "finetune-platform.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "finetune-platform.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "finetune-platform.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: platform
+          {{- if not .Values.image.repository }}
+          {{- fail "image.repository is required — build the Dockerfile and push it, then set image.repository/tag (see chart README)" }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: ui
+              containerPort: {{ .Values.ports.ui }}
+            - name: inference
+              containerPort: {{ .Values.ports.inference }}
+          env:
+            - name: PORT
+              value: {{ .Values.ports.ui | quote }}
+            - name: INFERENCE_PORT
+              value: {{ .Values.ports.inference | quote }}
+            - name: HF_HOME
+              value: /root/.cache/huggingface
+            {{- if .Values.ollama.enabled }}
+            - name: OLLAMA_HOST
+              value: "http://localhost:11434"
+            {{- end }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          # serve.sh boots both services + the first model load is slow, so guard
+          # liveness behind a generous startup probe.
+          startupProbe:
+            httpGet:
+              path: /
+              port: ui
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: ui
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: ui
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: models
+              mountPath: /app/models
+            - name: data
+              mountPath: /app/data
+            - name: logs
+              mountPath: /app/logs
+            - name: hfcache
+              mountPath: /root/.cache/huggingface
+            {{- end }}
+        {{- if .Values.ollama.enabled }}
+        - name: ollama
+          image: {{ .Values.ollama.image }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: ollama
+              containerPort: 11434
+          resources:
+            {{- toYaml .Values.ollama.resources | nindent 12 }}
+          volumeMounts:
+            - name: ollama
+              mountPath: /root/.ollama
+        {{- end }}
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: models
+          persistentVolumeClaim:
+            claimName: {{ include "finetune-platform.fullname" . }}-models
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ include "finetune-platform.fullname" . }}-data
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ include "finetune-platform.fullname" . }}-logs
+        - name: hfcache
+          persistentVolumeClaim:
+            claimName: {{ include "finetune-platform.fullname" . }}-hfcache
+        {{- end }}
+        {{- if .Values.ollama.enabled }}
+        - name: ollama
+          {{- if .Values.ollama.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "finetune-platform.fullname" . }}-ollama
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,46 @@
+{{- if .Values.persistence.enabled -}}
+{{- $full := include "finetune-platform.fullname" . -}}
+{{- $sc := .Values.persistence.storageClass -}}
+{{- $am := .Values.persistence.accessMode -}}
+{{- range $vol := tuple
+    (dict "name" "models"  "size" $.Values.persistence.models.size)
+    (dict "name" "data"    "size" $.Values.persistence.data.size)
+    (dict "name" "hfcache" "size" $.Values.persistence.hfCache.size)
+    (dict "name" "logs"    "size" $.Values.persistence.logs.size)
+}}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $full }}-{{ $vol.name }}
+  labels:
+    {{- include "finetune-platform.labels" $ | nindent 4 }}
+spec:
+  accessModes:
+    - {{ $am }}
+  resources:
+    requests:
+      storage: {{ $vol.size }}
+  {{- if $sc }}
+  storageClassName: {{ $sc | quote }}
+  {{- end }}
+{{- end }}
+{{- if and .Values.ollama.enabled .Values.ollama.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $full }}-ollama
+  labels:
+    {{- include "finetune-platform.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.ollama.persistence.size }}
+  {{- if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

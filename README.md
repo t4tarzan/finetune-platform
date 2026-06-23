@@ -126,6 +126,37 @@ pm2 status finetune-platform
 # http://localhost:7100
 ```
 
+### Kubernetes / EKS (Helm)
+
+A Helm chart ships in [`charts/finetune-platform`](charts/finetune-platform). It runs
+the platform as a **single stateful pod** (UI `:7100` + inference `:7200`) on the
+HuggingFace/PyTorch backend — works on any amd64 node (e.g. an `m5.xlarge`); CPU
+training is slow, so use small models (0.5B/1.5B) there, or a GPU node group for real
+throughput.
+
+```bash
+# 1. Build for the cluster's arch (amd64) and push to your registry (ECR/GHCR)
+REG=123456789012.dkr.ecr.us-east-1.amazonaws.com
+docker buildx build --platform linux/amd64 -t "$REG/finetune-platform:latest" --push .
+
+# 2. Install as a pod (EBS-backed PVCs for models, data, HF cache, logs)
+helm install ftp charts/finetune-platform \
+  --namespace finetune --create-namespace \
+  --set image.repository=$REG/finetune-platform \
+  --set persistence.storageClass=gp3
+
+# 3. Open the UI
+kubectl -n finetune rollout status deploy/ftp-finetune-platform
+kubectl -n finetune port-forward svc/ftp-finetune-platform 7100:7100   # http://localhost:7100
+```
+
+Expose it with `--set service.type=LoadBalancer` or `--set ingress.enabled=true`.
+Full options (Ollama sidecar, GPU, storage sizing) are in the
+[chart README](charts/finetune-platform/README.md).
+
+> ⚠️ Like Docker, the in-cluster pod uses the **CPU/HuggingFace** backend — never
+> MLX/Metal (that's bare-metal Apple Silicon only).
+
 ---
 
 ## Architecture

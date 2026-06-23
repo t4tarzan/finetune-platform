@@ -1,0 +1,116 @@
+# Default values for finetune-platform.
+#
+# This deploys ONE stateful pod (UI :7100 + inference :7200). The app keeps
+# training state in-memory, writes adapters to a local volume, and runs the
+# trainer as a subprocess — so it is NOT horizontally scalable. Keep replicaCount
+# at 1 (see comment below).
+
+# --- Container image -----------------------------------------------------------
+# REQUIRED: build the repo's Dockerfile and push to a registry your cluster can
+# pull (e.g. ECR/GHCR), then set repository+tag. See charts/finetune-platform/README.md.
+image:
+  repository: ""            # e.g. 123456789012.dkr.ecr.us-east-1.amazonaws.com/finetune-platform
+  tag: "latest"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []        # e.g. [{ name: ecr-creds }]
+
+# Single-instance, stateful. Do NOT raise — multiple replicas would fight over the
+# RWO model volume and diverge in-memory training state. Scale the NODE, not pods.
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+ports:
+  ui: 7100                  # web UI (chat + train)
+  inference: 7200           # OpenAI-compatible inference server
+
+# Sized for a modest CPU node (e.g. m5.xlarge = 4 vCPU / 16 GB, no GPU).
+# Good for 0.5B–1.5B with small datasets. Raise for larger models; CPU training is
+# slow regardless — use a GPU node group + a CUDA image for real throughput.
+resources:
+  requests:
+    cpu: "1"
+    memory: 4Gi
+  limits:
+    cpu: "3"
+    memory: 12Gi
+
+# Persistent volumes (EBS via the EKS CSI driver). Each is ReadWriteOnce, which is
+# why the pod is single-replica. Use an EFS storageClass (RWX) only if you later
+# need shared access.
+persistence:
+  enabled: true
+  storageClass: "gp3"       # "" = cluster default StorageClass
+  accessMode: ReadWriteOnce
+  models:
+    size: 20Gi              # LoRA adapters + merged models (GB each)
+  data:
+    size: 5Gi               # datasets + training history
+  hfCache:
+    size: 30Gi              # base-model downloads from Hugging Face (GB)
+  logs:
+    size: 1Gi
+
+service:
+  type: ClusterIP           # ClusterIP + Ingress, or LoadBalancer for direct exposure
+  annotations: {}
+
+# Ingress for the UI (:7100). On EKS this is typically the AWS Load Balancer
+# Controller (className: alb) or ingress-nginx.
+ingress:
+  enabled: false
+  className: "alb"
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+  host: ""                  # e.g. finetune.example.com  ("" = no host rule, path "/")
+  path: "/"
+  pathType: Prefix
+  tls: []                   # [{ secretName: tls-secret, hosts: [finetune.example.com] }]
+
+# Optional bundled Ollama sidecar for base-model chat (in-pod, localhost:11434).
+# Fine-tuned models work WITHOUT this (served by :7200). Pull a base model after
+# rollout: kubectl exec -c ollama deploy/<release> -- ollama pull qwen2.5:0.5b
+ollama:
+  enabled: false
+  image: "ollama/ollama:latest"
+  resources:
+    requests:
+      cpu: "250m"
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  persistence:
+    enabled: true
+    size: 20Gi              # pulled models persist
+
+# Extra environment variables for the platform container.
+extraEnv: []                # e.g. [{ name: HF_TOKEN, value: hf_xxx }]
+
+# Probe timing — serve.sh launches both services and the first model load is slow,
+# so the startup probe is generous before liveness kicks in.
+probes:
+  startup:
+    periodSeconds: 10
+    failureThreshold: 60    # up to ~10 min to become ready (image pull + first boot)
+  readiness:
+    periodSeconds: 15
+    failureThreshold: 3
+  liveness:
+    periodSeconds: 20
+    failureThreshold: 3
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}           # e.g. IRSA: eks.amazonaws.com/role-arn: arn:aws:iam::...:role/...
+
+podAnnotations: {}
+podSecurityContext: {}      # image writes under /root (HF cache) — runs as root by default
+securityContext: {}
+
+nodeSelector: {}            # e.g. { eks.amazonaws.com/nodegroup: cpu-pool }
+tolerations: []
+affinity: {}

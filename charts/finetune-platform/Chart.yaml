@@ -1,0 +1,20 @@
+apiVersion: v2
+name: finetune-platform
+description: |
+  Local recursive fine-tuning platform (chat UI + training + OpenAI-compatible
+  inference) as a single stateful pod. On Kubernetes/EKS it runs the
+  HuggingFace/PyTorch backend (CPU by default; MLX/Metal is Apple-Silicon-only and
+  not used in-cluster).
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/t4tarzan/finetune-platform
+sources:
+  - https://github.com/t4tarzan/finetune-platform
+maintainers:
+  - name: t4tarzan
+keywords:
+  - fine-tuning
+  - llm
+  - lora
+  - inference
