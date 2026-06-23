@@ -30,6 +30,27 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.persistence.enabled }}
+      initContainers:
+        # Seed the (empty) data PVC with the demo datasets baked into the image, so
+        # they appear in the Train dataset dropdown. Mounts the PVC at /seed (NOT over
+        # /app/data) so the image's bundled files are visible to copy. cp -n keeps any
+        # datasets a user already added across restarts.
+        - name: seed-datasets
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - sh
+            - -c
+            - |
+              mkdir -p /seed/sre-pods
+              cp -n /app/data/sre-pods/*.jsonl /seed/sre-pods/ 2>/dev/null || true
+              cp -n /app/data/example_train.jsonl /seed/ 2>/dev/null || true
+              echo "seeded demo datasets:"; ls -R /seed 2>/dev/null | head -20
+          volumeMounts:
+            - name: data
+              mountPath: /seed
+      {{- end }}
       containers:
         - name: platform
           {{- if not .Values.image.repository }}

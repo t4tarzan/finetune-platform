@@ -580,6 +580,31 @@ def logs_view(path: str = Query(..., description="Log path relative to logs/"),
         raise HTTPException(400, "Invalid log path")
 
 
+@app.get("/api/datasets")
+def list_datasets():
+    """List JSONL datasets under the data dir for the Train picker (e.g. the demo's
+    dataset_v1/dataset_v2). Returns label (relative path), full path, and row count.
+    Per-run split files (train.jsonl/valid.jsonl) and the DuckDB files are skipped."""
+    data_dir = config.get("paths", {}).get("data", "data")
+    skip = {"train.jsonl", "valid.jsonl", "test.jsonl"}
+    out = []
+    for root, _dirs, files in os.walk(data_dir):
+        for f in sorted(files):
+            if not f.endswith(".jsonl") or f in skip:
+                continue
+            full = os.path.join(root, f)
+            rel = os.path.relpath(full, ".")
+            try:
+                with open(full) as fh:
+                    rows = sum(1 for ln in fh if ln.strip())
+            except Exception:
+                rows = 0
+            out.append({"label": rel, "path": rel, "rows": rows})
+    # Stable, demo-friendly order: shallowest path first, then name.
+    out.sort(key=lambda d: (d["path"].count(os.sep), d["path"]))
+    return {"datasets": out}
+
+
 @app.get("/api/adapters")
 def list_adapters():
     """List LoRA adapters already on disk (for the 'continue from fine-tuned'
@@ -1826,9 +1851,12 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Local = use your own JSONL file. Auto-Generate = creates data using available models.</span>
         </div>
         <div class="form-group" id="ft-data-path-group">
-          <label>Verified Data Path</label>
+          <label>Dataset <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">— pick a bundled dataset or type a path</span></label>
+          <select id="ft-dataset-pick" onchange="pickDataset()" style="margin-bottom:6px;">
+            <option value="">— Select a dataset —</option>
+          </select>
           <input id="ft-data-path" value="data/example_train.jsonl" placeholder="path to verified_train.jsonl" />
-          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Path to a JSONL file with format: <code>{"question":"...","reference_answer":"...","context":"..."}</code></span>
+          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Pick from the dropdown (e.g. the demo's <code>dataset_v1</code> 100 rows, then the appended <code>dataset_v2</code> 150 rows), or type any JSONL path: <code>{"question":"...","reference_answer":"...","context":"..."}</code></span>
           <div style="display:flex;gap:6px;margin-top:6px;">
             <button onclick="useLocalDataset()" style="flex:1;padding:6px 12px;font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;">📂 Use This Dataset</button>
           </div>
@@ -2204,6 +2232,32 @@ function getConfig() {
     max_rows: parseInt(document.getElementById('ft-rows').value),
     resume_adapter: document.getElementById('ft-resume-adapter').value,
   };
+}
+
+// Populate the dataset picker with JSONL files found under data/ (e.g. the demo's
+// dataset_v1.jsonl / dataset_v2.jsonl) so they can be chosen without typing a path.
+async function loadDatasets() {
+  try {
+    const sel = document.getElementById('ft-dataset-pick');
+    if (!sel) return;
+    const res = await fetch('/api/datasets');
+    const data = await res.json();
+    sel.innerHTML = '<option value="">— Select a dataset —</option>';
+    (data.datasets || []).forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.path;
+      o.textContent = d.label + (d.rows ? ' (' + d.rows + ' rows)' : '');
+      sel.appendChild(o);
+    });
+  } catch (e) { console.error(e); }
+}
+
+// Selecting a dataset fills the path field and marks the dataset ready to train.
+function pickDataset() {
+  const sel = document.getElementById('ft-dataset-pick');
+  if (!sel || !sel.value) return;
+  document.getElementById('ft-data-path').value = sel.value;
+  if (typeof useLocalDataset === 'function') useLocalDataset();
 }
 
 // Populate the "Continue from fine-tuned" dropdown with adapters already on disk
@@ -2729,6 +2783,7 @@ loadModels();
 loadLeaderboard();
 loadDocs();
 loadAdapters();
+loadDatasets();
 checkInferenceStatus();
 initTrainState();
 setInterval(loadLeaderboard, 30000);
