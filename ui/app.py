@@ -779,6 +779,96 @@ def get_datastore():
     return DATASTORE_INSTANCE
 
 
+# Bundled observability tables seeded into the local DuckDB on first boot, so the
+# chat's preset cards / queries work offline. Loaded only if not already present,
+# which preserves any rows a client appends across restarts.
+SRE_TABLES_DIR = os.path.join(config.get("paths", {}).get("data", "data"), "sre-tables")
+
+@app.on_event("startup")
+def _seed_observability_tables():
+    try:
+        if not os.path.isdir(SRE_TABLES_DIR):
+            return
+        ds = get_datastore()
+        existing = set(ds.list_tables())
+        # 'predictions' present ⇒ already seeded (or client-managed) — don't clobber appends.
+        if "predictions" in existing:
+            return
+        loaded = ds.import_dir(SRE_TABLES_DIR, mode="replace")
+        print(f"[startup] seeded {len(loaded)} observability tables into DuckDB "
+              f"({sum(loaded.values()):,} rows)")
+    except Exception as e:
+        print(f"[startup] observability seed skipped: {e}")
+
+
+# ── Preset cards — one-tap SQL over the local observability tables ──────────
+# Air-gap safe: pure SQL, no model needed. Powers the chat's quick-action strip.
+PRESET_CARDS = [
+    {"id": "pods_at_risk", "title": "⚠️ Pods at risk now", "category": "risk",
+     "desc": "Highest current leak-probability per pod (critical/high)",
+     "sql": "SELECT pod_name, namespace, cluster_name, use_case_name, "
+            "round(leak_probability,3) AS probability, risk_level "
+            "FROM predictions WHERE risk_level IN ('critical','high') "
+            "QUALIFY row_number() OVER (PARTITION BY pod_name ORDER BY leak_probability DESC)=1 "
+            "ORDER BY probability DESC LIMIT 15"},
+    {"id": "predicted_leaks_30m", "title": "⏱️ Predicted impact < 30m", "category": "risk",
+     "desc": "Predictions with time-to-impact under 30 minutes",
+     "sql": "SELECT pod_name, namespace, use_case_name, round(leak_probability,3) AS prob, "
+            "time_to_impact_seconds AS eta_s, optimal_action_window FROM predictions "
+            "WHERE time_to_impact_seconds IS NOT NULL AND time_to_impact_seconds < 1800 "
+            "AND leak_probability > 0.6 ORDER BY time_to_impact_seconds ASC LIMIT 15"},
+    {"id": "oom_offenders", "title": "💥 Top OOM offenders", "category": "events",
+     "desc": "Pods with the most OOMKilled / back-off events",
+     "sql": "SELECT involved_object_name AS pod, namespace, cluster_name, count(*) AS events "
+            "FROM kubernetes_events WHERE reason IN ('OOMKilling','BackOff') "
+            "GROUP BY 1,2,3 ORDER BY events DESC LIMIT 15"},
+    {"id": "crashloops", "title": "🔁 CrashLoopBackOff pods", "category": "events",
+     "desc": "Pods currently crash-looping",
+     "sql": "SELECT DISTINCT pod_name, namespace, cluster_name, restart_count "
+            "FROM kubernetes_pod_status WHERE phase='CrashLoopBackOff' "
+            "ORDER BY restart_count DESC LIMIT 15"},
+    {"id": "alert_volume", "title": "🔔 Alert volume by namespace", "category": "alerts",
+     "desc": "Alert counts (and criticals) per namespace",
+     "sql": "SELECT namespace, count(*) AS alerts, "
+            "sum(CASE WHEN risk_level='critical' THEN 1 ELSE 0 END) AS critical "
+            "FROM alert_log GROUP BY 1 ORDER BY alerts DESC LIMIT 15"},
+    {"id": "nodes_not_ready", "title": "🖥️ Nodes not ready", "category": "nodes",
+     "desc": "Nodes reporting NotReady",
+     "sql": "SELECT DISTINCT cluster_name, node_name FROM kubernetes_node_status "
+            "WHERE ready_status=false LIMIT 20"},
+    {"id": "namespace_risk", "title": "📊 Namespace risk summary", "category": "risk",
+     "desc": "Average & peak predicted risk per namespace",
+     "sql": "SELECT namespace, count(*) AS predictions, round(avg(leak_probability),3) AS avg_prob, "
+            "round(max(leak_probability),3) AS peak_prob FROM predictions "
+            "GROUP BY 1 ORDER BY avg_prob DESC LIMIT 15"},
+    {"id": "sop_gaps", "title": "📚 SOP coverage gaps", "category": "knowledge",
+     "desc": "Most common gaps where no runbook matched well",
+     "sql": "SELECT gap_category, count(*) AS gaps, round(avg(best_similarity),3) AS avg_match "
+            "FROM sop_gaps GROUP BY 1 ORDER BY gaps DESC LIMIT 15"},
+]
+
+@app.get("/api/data/cards")
+def data_cards():
+    """List the preset cards (title/category/desc) for the chat quick-action strip."""
+    return {"cards": [{k: c[k] for k in ("id", "title", "category", "desc")} for c in PRESET_CARDS]}
+
+@app.get("/api/data/card")
+def data_card(id: str = Query(...)):
+    """Run a preset card's SQL against the local observability tables and return rows."""
+    card = next((c for c in PRESET_CARDS if c["id"] == id), None)
+    if not card:
+        raise HTTPException(404, f"Unknown card: {id}")
+    ds = get_datastore()
+    try:
+        rows = ds.query(card["sql"])
+    except Exception as e:
+        raise HTTPException(500, f"Card query failed (is the data loaded?): {e}")
+    cols = list(rows[0].keys()) if rows else []
+    # stringify for JSON safety (timestamps/decimals)
+    data = [[("" if r[c] is None else str(r[c])) for c in cols] for r in rows]
+    return {"id": id, "title": card["title"], "columns": cols, "rows": data, "count": len(data)}
+
+
 @app.get("/api/data/stats")
 def data_stats():
     """Get data store statistics."""
@@ -1815,10 +1905,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <span style="font-size:16px;font-weight:600;">Chat</span>
       <span style="font-size:12px;color:var(--text-secondary);font-weight:400;" id="current-model-label">no model selected</span>
     </div>
+    <div id="cards-strip" style="display:flex;gap:6px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--border);"></div>
     <div class="chat-area" id="chat-area">
       <div class="empty-state">
-        <div>Select a model and start chatting</div>
-        <div class="key-hint" style="font-size:12px;padding:4px 8px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">Fine-tuned models appear in the dropdown automatically</div>
+        <div>Select a model and start chatting — or tap a card above to query your data</div>
+        <div class="key-hint" style="font-size:12px;padding:4px 8px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);">Cards run against your bundled observability tables (no model needed)</div>
       </div>
     </div>
     <div class="input-area">
@@ -2787,8 +2878,48 @@ async function loadInferenceModel() {
   document.getElementById('inf-model-path').disabled = false;
 }
 
+// ── Preset cards (query bundled observability data, no model needed) ──
+async function loadCards() {
+  try {
+    const strip = document.getElementById('cards-strip');
+    if (!strip) return;
+    const res = await fetch(BASE+'/api/data/cards');
+    const data = await res.json();
+    if (!data.cards || !data.cards.length) { strip.style.display='none'; return; }
+    strip.innerHTML = data.cards.map(c =>
+      '<button onclick="runCard(\''+c.id+'\')" title="'+(c.desc||'')+'" '+
+      'style="white-space:nowrap;padding:6px 12px;font-size:12px;background:var(--surface2);'+
+      'color:var(--text);border:1px solid var(--border);border-radius:16px;cursor:pointer;">'+c.title+'</button>'
+    ).join('');
+  } catch(e) { console.error(e); }
+}
+async function runCard(id) {
+  const ca = document.getElementById('chat-area');
+  const empty = ca.querySelector('.empty-state'); if (empty) empty.remove();
+  const ld = document.createElement('div'); ld.className='message assistant';
+  ld.innerHTML = '<div class="loading"></div> Querying data…'; ca.appendChild(ld); ca.scrollTop = ca.scrollHeight;
+  try {
+    const r = await fetch(BASE+'/api/data/card?id='+encodeURIComponent(id));
+    const d = await r.json();
+    if (!r.ok) { ld.innerHTML = '⚠️ '+(d.detail||'card failed'); return; }
+    let html = '<div style="font-weight:600;margin-bottom:6px;">'+d.title+' · '+d.count+' rows</div>';
+    if (d.count === 0) { html += '<div style="color:var(--text-secondary)">No matching rows.</div>'; }
+    else {
+      html += '<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:12px;width:100%">';
+      html += '<tr>'+d.columns.map(c=>'<th style="text-align:left;border-bottom:1px solid var(--border);padding:4px 8px;color:var(--text-secondary)">'+c+'</th>').join('')+'</tr>';
+      d.rows.slice(0,15).forEach(row => {
+        html += '<tr>'+row.map(v=>'<td style="padding:4px 8px;border-bottom:1px solid var(--surface2)">'+v+'</td>').join('')+'</tr>';
+      });
+      html += '</table></div>';
+    }
+    ld.innerHTML = html;
+  } catch(e) { ld.innerHTML = '⚠️ '+e.message; }
+  ca.scrollTop = ca.scrollHeight;
+}
+
 // ── Init ──
 loadModels();
+loadCards();
 loadLeaderboard();
 loadDocs();
 loadAdapters();
