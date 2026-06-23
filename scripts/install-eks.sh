@@ -23,12 +23,9 @@ helm upgrade --install finetune-platform "$CHART" \
   --set persistence.storageClass="$STORAGE_CLASS" \
   --set ollama.enabled=true
 
-echo "==> Waiting for rollout (first boot downloads the base model — a few minutes)"
-kubectl -n "$NS" rollout status deploy/finetune-platform --timeout=900s
-
-echo "==> Pulling base model '$BASE_MODEL' into the ollama sidecar"
-kubectl -n "$NS" exec -c ollama deploy/finetune-platform -- ollama pull "$BASE_MODEL" || \
-  echo "   (pull failed — do it later: kubectl -n $NS exec -c ollama deploy/finetune-platform -- ollama pull $BASE_MODEL)"
+echo "==> Waiting for rollout (models are baked into the image — no download)"
+kubectl -n "$NS" rollout status deploy/finetune-platform --timeout=600s
+echo "   (first boot seeds 43 tables into DuckDB + merges the bundled sre-assistant adapter)"
 
 cat <<EOF
 
@@ -36,6 +33,10 @@ cat <<EOF
     kubectl -n $NS port-forward svc/finetune-platform 7100:7100
     # then browse http://localhost:7100
 
-    Or expose it:  helm upgrade finetune-platform "$CHART" -n $NS --reuse-values --set service.type=LoadBalancer
-    Sub-path ingress (nginx): add --set ingress.enabled=true --set ingress.className=nginx --set basePath=/finetune-platform
+Out of the box: preset cards, "Query data" (text-to-SQL), a fine-tuned sre-assistant,
+and the train -> append -> retrain loop. Optional base-model chat:
+    kubectl -n $NS exec -c ollama deploy/finetune-platform -- ollama pull $BASE_MODEL
+
+Expose:  helm upgrade finetune-platform "$CHART" -n $NS --reuse-values --set service.type=LoadBalancer
+Sub-path ingress (nginx): add --set ingress.enabled=true --set ingress.className=nginx --set basePath=/finetune-platform
 EOF
