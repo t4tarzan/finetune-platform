@@ -246,20 +246,27 @@ def chat_completions(req: ChatRequest):
             return _stream_hf(model, tokenizer, prompt, req)
         return _complete_hf(model, tokenizer, prompt, req)
 
-    # Format messages into a single prompt
-    prompt_parts = []
-    for msg in req.messages:
-        role = msg.role
-        content = msg.content
-        if role == "system":
-            prompt_parts.append(f"<|system|>\n{content}")
-        elif role == "user":
-            prompt_parts.append(f"<|user|>\n{content}")
-        elif role == "assistant":
-            prompt_parts.append(f"<|assistant|>\n{content}")
-
-    prompt_parts.append("<|assistant|>\n")
-    prompt = "\n".join(prompt_parts)
+    # Build the prompt with the model's own chat template (correct ChatML for Qwen,
+    # etc.) so generation matches how the model was trained/served and stops at the
+    # model's real end-of-turn token. A hand-rolled <|user|>/<|assistant|> format
+    # does not match Qwen's ChatML and causes the model to ramble past its stop token.
+    messages = [{"role": m.role, "content": m.content} for m in req.messages]
+    try:
+        prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True,
+        )
+    except Exception:
+        # Fallback for tokenizers without a chat template.
+        prompt_parts = []
+        for msg in req.messages:
+            if msg.role == "system":
+                prompt_parts.append(f"<|system|>\n{msg.content}")
+            elif msg.role == "user":
+                prompt_parts.append(f"<|user|>\n{msg.content}")
+            elif msg.role == "assistant":
+                prompt_parts.append(f"<|assistant|>\n{msg.content}")
+        prompt_parts.append("<|assistant|>\n")
+        prompt = "\n".join(prompt_parts)
 
     if req.stream:
         return _stream_completion(model, tokenizer, prompt, req)

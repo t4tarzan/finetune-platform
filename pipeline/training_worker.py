@@ -46,6 +46,7 @@ def run(config: dict):
     epochs = config.get("epochs", 3)
     max_seq_length = config.get("max_seq_length", 2048)
     grad_checkpoint = config.get("grad_checkpoint", True)
+    resume_adapter = config.get("resume_adapter", "")
 
     # Dataset settings
     dataset_type = config.get("dataset_type", "local")  # "local" or "bigset"
@@ -193,6 +194,28 @@ def run(config: dict):
         emit("error", message=f"Failed to apply LoRA: {e}")
         return
 
+    # Continue training from a previous adapter (incremental fine-tuning): load the
+    # prior run's LoRA weights into the freshly-applied layers so optimization picks
+    # up where it left off instead of from random init. The rank/alpha here must match
+    # the source adapter (the caller is responsible for that). strict=False tolerates
+    # the base model's frozen (non-adapter) params being absent from the file.
+    if resume_adapter:
+        resume_file = resume_adapter
+        if os.path.isdir(resume_file):
+            resume_file = os.path.join(resume_file, "adapters.safetensors")
+        if os.path.exists(resume_file):
+            try:
+                model.load_weights(resume_file, strict=False)
+                args.resume_adapter_file = resume_file
+                emit("status", phase="resumed_adapter",
+                     message=f"Resumed from adapter: {resume_file}")
+            except Exception as e:
+                emit("error", message=f"Failed to load resume adapter '{resume_file}': {e}")
+                return
+        else:
+            emit("error", message=f"Resume adapter not found: {resume_file}")
+            return
+
     # Count trainable parameters (handle quantized models gracefully)
     try:
         trainable = sum(p.size for p in model.parameters() if hasattr(p, 'size') and not p.isfrozen())
@@ -223,6 +246,10 @@ def run(config: dict):
         {
             "model": base_model,
             "fine_tune_type": "lora",
+            # num_layers is required by mlx_lm.tuner.utils.load_adapters at
+            # merge/export time (it rebuilds the LoRA layers from this config).
+            # -1 == apply LoRA to all layers, matching how we trained.
+            "num_layers": args.num_layers,
             "lora_parameters": args.lora_parameters,
         },
         str(adapter_path_obj / "adapter_config.json"),

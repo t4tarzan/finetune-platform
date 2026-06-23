@@ -151,6 +151,9 @@ class TrainingManager:
             "max_seq_length": params.get("max_seq_length") or training_cfg.get("max_seq_length", 2048),
             "grad_checkpoint": params.get("grad_checkpoint", True),
             "max_rows": params.get("max_rows", 50),
+            # Optional: continue training from a previous adapter (incremental
+            # fine-tuning). Empty/absent → fresh LoRA layers from the base model.
+            "resume_adapter": params.get("resume_adapter", ""),
         }
 
         # Spawn worker subprocess

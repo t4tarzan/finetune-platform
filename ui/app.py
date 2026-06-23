@@ -142,6 +142,10 @@ class StartTrainingRequest(BaseModel):
     epochs: int = 3
     max_seq_length: int = 2048
     max_rows: int = 50
+    # Continue training from an existing LoRA adapter (e.g. retrain a fine-tuned
+    # model on a larger dataset). Path to the previous run's adapters.safetensors
+    # (or its adapter directory). Empty = train fresh LoRA layers from the base model.
+    resume_adapter: str = ""
 
 
 class DiscoverRequest(BaseModel):

@@ -1,8 +1,8 @@
 # Fine-Tuning Platform Configuration
 
 # Base model for fine-tuning (open-source, served via MLX)
-base_model: "mlx-community/Qwen2.5-7B-Instruct-4bit"
-base_model_id: "Qwen/Qwen2.5-7B-Instruct"
+base_model: "mlx-community/Qwen2.5-1.5B-Instruct-4bit"
+base_model_id: "Qwen/Qwen2.5-1.5B-Instruct"
 
 # Models used for consensus verification (via cmd -p)
 # Diverse architectures to maximize independent agreement

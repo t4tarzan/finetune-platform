@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import yaml
 from pathlib import Path
 
@@ -32,29 +33,43 @@ def export_model(
     model_name = f"{niche}"
     merged_dir = os.path.join(export_dir, f"{model_name}_merged")
 
+    # Resolve the base model the adapter was actually trained on: the adapter's own
+    # adapter_config.json is authoritative (the global config.base_model may have
+    # changed since training). Fall back to the configured base model.
+    adapter_base = base_model
+    cfg_path = os.path.join(adapter_path, "adapter_config.json")
+    if os.path.exists(cfg_path):
+        try:
+            adapter_base = json.load(open(cfg_path)).get("model", base_model)
+        except Exception:
+            pass
+
     print(f"\nExporting {niche}...")
     print(f"  Adapter: {adapter_path}")
-    print(f"  Output: {merged_dir}")
+    print(f"  Base:    {adapter_base}")
+    print(f"  Output:  {merged_dir}")
 
-    # Load model with adapter
-    from mlx_lm import load
-    from mlx_lm.tuner.utils import load_adapters
-
+    # Fuse the LoRA adapter into the base model with mlx_lm's fuser. Unlike a bare
+    # save_weights of the LoRA-applied model, this writes a *standalone* model dir
+    # (config.json + fused weights + tokenizer + chat template) that the inference
+    # server can load directly with mlx_lm.load — which save_weights alone cannot.
+    os.makedirs(merged_dir, exist_ok=True)
     try:
-        model, tokenizer = load(base_model, tokenizer_config={"trust_remote_code": True})
-
-        adapter_file = os.path.join(adapter_path, "adapters.safetensors")
-        if os.path.exists(adapter_file):
-            load_adapters(model, adapter_path)
-            print(f"  Loaded adapter")
-        else:
-            print(f"  No adapter found, exporting base model only")
-
-        # Save merged
-        model.save_weights(os.path.join(merged_dir, "model.safetensors"))
-        tokenizer.save_pretrained(merged_dir)
-        print(f"  Saved merged model: {merged_dir}")
-
+        proc = subprocess.run(
+            [
+                sys.executable, "-m", "mlx_lm", "fuse",
+                "--model", adapter_base,
+                "--adapter-path", adapter_path,
+                "--save-path", merged_dir,
+            ],
+            capture_output=True, text=True,
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        )
+        if proc.returncode != 0 or not os.path.exists(os.path.join(merged_dir, "config.json")):
+            print(f"  Export error: fuse failed (code {proc.returncode})")
+            print((proc.stderr or "")[-500:])
+            return None
+        print(f"  Fused merged model: {merged_dir}")
     except Exception as e:
         print(f"  Export error: {e}")
         return None
