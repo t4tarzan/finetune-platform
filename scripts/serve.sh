@@ -22,6 +22,17 @@ else
 fi
 [ -n "$PY" ] || { echo "[serve] no python interpreter found on PATH" >&2; exit 1; }
 
+# ── Seed bundled datasets + adapter into the (often volume-mounted) data/models
+# dirs on first boot. The image bakes them to /app/_bundled (not overlaid by the
+# volume); cp -n preserves anything a user already added. One unified seed path for
+# both `docker compose` (named volumes) and Kubernetes (PVCs) — no init container.
+if [ -d /app/_bundled ]; then
+  mkdir -p data models
+  cp -rn /app/_bundled/data/. data/ 2>/dev/null || true
+  cp -rn /app/_bundled/models/. models/ 2>/dev/null || true
+  echo "[serve] seeded bundled datasets + adapter into data/ and models/"
+fi
+
 : "${PORT:=7100}"
 : "${INFERENCE_PORT:=7200}"
 

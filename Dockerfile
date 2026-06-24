@@ -36,10 +36,15 @@ ENV HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 
 COPY . .
 
-# Generate the bundled SRE observability tables (for the chat's preset cards) AND the
-# SRE Q&A training set (selectable in the Train dropdown), baked into the image; the
-# chart's init container seeds both into the data volume on first boot.
-RUN python scripts/gen_sre_tables.py && python scripts/gen_sre_qa.py
+# Generate the SRE observability tables (cards) + Q&A training set, then stage ALL
+# bundled artifacts (data + the pre-trained adapter) under /app/_bundled — a path the
+# data/models volumes do NOT overlay. serve.sh copies them into data/ and models/ on
+# first boot, so the seed works identically for `docker compose` and Kubernetes
+# (no init container needed).
+RUN python scripts/gen_sre_tables.py && python scripts/gen_sre_qa.py \
+ && mkdir -p /app/_bundled \
+ && cp -r /app/data   /app/_bundled/data \
+ && cp -r /app/models /app/_bundled/models
 
 # 7100 = web UI (chat + train) · 7200 = OpenAI-compatible inference server
 EXPOSE 7100 7200

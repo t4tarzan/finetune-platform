@@ -5,7 +5,6 @@
 {{- range $vol := tuple
     (dict "name" "models"  "size" $.Values.persistence.models.size)
     (dict "name" "data"    "size" $.Values.persistence.data.size)
-    (dict "name" "hfcache" "size" $.Values.persistence.hfCache.size)
     (dict "name" "logs"    "size" $.Values.persistence.logs.size)
 }}
 ---
