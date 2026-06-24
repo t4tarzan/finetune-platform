@@ -18,7 +18,7 @@ import threading
 import time
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -609,6 +609,77 @@ def list_datasets():
     # Stable, demo-friendly order: shallowest path first, then name.
     out.sort(key=lambda d: (d["path"].count(os.sep), d["path"]))
     return {"datasets": out}
+
+
+@app.post("/api/data/upload")
+async def data_upload(
+    request: Request,
+    name: str = Query(..., description="File name (e.g. my_data.csv)"),
+    format: str = Query("auto", description="auto | csv | jsonl"),
+    question_col: str = Query("question"),
+    answer_col: str = Query("reference_answer"),
+    context_col: str = Query("context"),
+    mode: str = Query("replace", description="replace | append"),
+):
+    """Bring-your-own data: upload a CSV or JSONL, convert to training JSONL, and save it
+    under data/uploads/ so it appears in the Train dataset dropdown (for fine-tune or
+    retrain). CSV rows map question/answer/context columns (also accepts prompt/completion
+    or question/reference_answer). The file body is sent raw (no multipart dependency)."""
+    import csv as _csv, io as _io
+    raw = await request.body()
+    if not raw:
+        raise HTTPException(400, "Empty upload.")
+    text = raw.decode("utf-8", errors="replace")
+
+    data_dir = config.get("paths", {}).get("data", "data")
+    updir = os.path.join(data_dir, "uploads")
+    os.makedirs(updir, exist_ok=True)
+    base = _re.sub(r"[^A-Za-z0-9._-]", "_", os.path.basename(name)) or "upload"
+    base = _re.sub(r"\.(csv|jsonl|json)$", "", base, flags=_re.I) + ".jsonl"
+    out = os.path.join(updir, base)
+
+    fmt = format
+    if fmt == "auto":
+        fmt = "jsonl" if (name.lower().endswith((".jsonl", ".json")) or text.lstrip()[:1] == "{") else "csv"
+
+    written = 0
+    open_mode = "a" if (mode == "append" and os.path.exists(out)) else "w"
+    with open(out, open_mode) as f:
+        if fmt == "jsonl":
+            for ln in text.splitlines():
+                ln = ln.strip()
+                if not ln:
+                    continue
+                try:
+                    obj = json.loads(ln)
+                except Exception:
+                    continue
+                # normalise prompt/completion or question/reference_answer
+                q = obj.get("prompt") or obj.get(question_col) or obj.get("question")
+                a = obj.get("completion") if "completion" in obj else (obj.get(answer_col) or obj.get("reference_answer"))
+                if not q or a is None:
+                    continue
+                row = {"question": q, "reference_answer": a}
+                if obj.get(context_col) or obj.get("context"):
+                    row["context"] = obj.get(context_col) or obj.get("context")
+                f.write(json.dumps(row) + "\n"); written += 1
+        else:  # csv -> jsonl
+            reader = _csv.DictReader(_io.StringIO(text))
+            for r in reader:
+                q = (r.get(question_col) or r.get("prompt") or r.get("question"))
+                a = (r.get(answer_col) or r.get("completion") or r.get("reference_answer"))
+                if not q or a is None or str(a) == "":
+                    continue
+                row = {"question": q, "reference_answer": a}
+                ctx = r.get(context_col) or r.get("context")
+                if ctx:
+                    row["context"] = ctx
+                f.write(json.dumps(row) + "\n"); written += 1
+
+    if written == 0:
+        raise HTTPException(422, "No usable rows. Need columns question/reference_answer "
+                                 "(or prompt/completion), or JSONL with those keys.")
+    return {"path": os.path.relpath(out, "."), "rows": written, "format": fmt, "mode": open_mode}
 
 
 @app.get("/api/adapters")
@@ -2051,7 +2122,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Pick from the dropdown (e.g. the demo's <code>dataset_v1</code> 100 rows, then the appended <code>dataset_v2</code> 150 rows), or type any JSONL path: <code>{"question":"...","reference_answer":"...","context":"..."}</code></span>
           <div style="display:flex;gap:6px;margin-top:6px;">
             <button onclick="useLocalDataset()" style="flex:1;padding:6px 12px;font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;">📂 Use This Dataset</button>
+            <button onclick="document.getElementById('ft-upload-file').click()" title="Upload your own CSV or JSONL — it's converted and added to the dropdown for training/retraining" style="flex:1;padding:6px 12px;font-size:11px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px;cursor:pointer;">⬆ Upload CSV / JSONL</button>
+            <input type="file" id="ft-upload-file" accept=".csv,.jsonl,.json" style="display:none" onchange="uploadDataset(this)"/>
           </div>
+          <div id="ft-upload-status" style="display:none;margin-top:6px;padding:6px 8px;border-radius:4px;font-size:11px;"></div>
+          <span style="font-size:10px;color:var(--text-secondary);margin-top:4px;display:block;">Upload your own data to append &amp; retrain. CSV needs columns <code>question,reference_answer[,context]</code> (or <code>prompt,completion</code>); JSONL rows use the same keys.</span>
         </div>
         <div class="form-group" id="ft-desc-group" style="display:none">
           <label>Dataset Description</label>
@@ -2478,6 +2553,32 @@ async function loadDatasets() {
       sel.appendChild(o);
     });
   } catch (e) { console.error(e); }
+}
+
+// Upload a CSV/JSONL → converted to training JSONL under data/uploads/, then added to
+// the dropdown and selected, ready to train/retrain.
+async function uploadDataset(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const st = document.getElementById('ft-upload-status');
+  st.style.display = ''; st.style.background = 'var(--surface2)'; st.style.color = 'var(--text)';
+  st.textContent = 'Uploading & converting ' + file.name + '…';
+  try {
+    const body = await file.text();
+    const r = await fetch(BASE + '/api/data/upload?name=' + encodeURIComponent(file.name) + '&format=auto', {
+      method: 'POST', headers: { 'Content-Type': 'text/plain' }, body
+    });
+    const d = await r.json();
+    if (!r.ok) { st.style.background = 'rgba(248,81,73,0.15)'; st.style.color = '#f85149'; st.textContent = '⚠️ ' + (d.detail || 'upload failed'); input.value = ''; return; }
+    st.style.background = 'rgba(63,185,80,0.15)'; st.style.color = 'var(--success)';
+    st.textContent = '✅ Added ' + d.rows + ' rows as ' + d.path + ' — selected below, ready to train.';
+    await loadDatasets();
+    const sel = document.getElementById('ft-dataset-pick');
+    sel.value = d.path; pickDataset();
+  } catch (e) {
+    st.style.background = 'rgba(248,81,73,0.15)'; st.style.color = '#f85149'; st.textContent = '⚠️ ' + e.message;
+  }
+  input.value = '';
 }
 
 // Selecting a dataset fills the path field and marks the dataset ready to train.
