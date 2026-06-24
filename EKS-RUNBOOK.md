@@ -90,18 +90,38 @@ kubectl -n finetune port-forward svc/finetune-platform 7100:7100
 ```
 
 ## 6. Verify the appliance (this is the test)
-- [ ] **Chat tab** → tap a card (e.g. **Top OOM offenders**) → a table from the bundled data appears.
+
+### 6a. Explore the bundled data (Chat tab)
+- [ ] Tap a card (e.g. **Top OOM offenders**, **CrashLoopBackOff pods**) → a live table from the bundled data appears.
 - [ ] Tick **🗄️ Query data**, ask `top 5 namespaces by alert count` → it shows the SQL + the answer.
-- [ ] **Model dropdown** lists **`sre-assistant (fine-tuned)`** → pick it, ask
-  *"a payments pod was flagged for OOM Risk — what do I do?"* → a remediation answer.
-- [ ] **Train tab** → pick `dataset_v1.jsonl` → **Start Training** → **Export & Serve** →
-  then `dataset_v2.jsonl` with **Continue from fine-tuned** → retrain → chat again (improves).
-- [ ] **Bring your own data**: Train tab → **⬆ Upload CSV / JSONL** → pick a file
-  (CSV columns `question,reference_answer[,context]` or `prompt,completion`) → it
-  converts, lands in the dropdown, and you can train/retrain on it.
-  > For uploads + retrained models to **persist** across restarts, install with the
-  > PVC path (`--set persistence.storageClass=gp3`, the default). With
-  > `persistence.enabled=false` they're ephemeral (fine for a demo).
+- [ ] **Model dropdown** lists **`sre-assistant (fine-tuned)`** → pick it, ask an SRE question → a grounded remediation answer.
+
+### 6b. Make it yours — no code, no rebuild (Chat tab, buttons next to the cards)
+- [ ] **➕ Card** → enter a *title* + a `SELECT …` query → **Save**. It's validated (read-only
+  only), saved to `data/cards.json` on the volume, and appears in the strip. **✕** removes a custom card.
+- [ ] **⬆ Data table** → upload a CSV of your own observability data → name the table → it
+  becomes a queryable DuckDB table that your cards **and** the 🗄️ text-to-SQL chat can query right away.
+
+### 6c. See training improve — the v1 → v2 demo (Train tab)
+Two datasets ship for exactly this: `sre_qa_v1` (141 rows) and `sre_qa_v2` (241 rows, with the
+harder OOM/remediation cases).
+- [ ] **Train v1**: dataset `sre_qa_v1` → **Start Training** → loss curve settles → **Export & Serve**.
+- [ ] **Ask the hero question** (select the v1 model in Chat):
+  `Our ledger-svc pod in finance was flagged for OOM Risk at high risk. Give the full root cause and remediation.`
+  → v1 answers, but generically.
+- [ ] **Retrain into v2**: dataset `sre_qa_v2` → tick **Continue from fine-tuned** → pick your v1
+  model → **Start Training**. The loss starts *lower* and settles lower → **Export & Serve**.
+- [ ] **Ask the same question** with the v2 model → the answer is now specific (OOMKill / exit 137,
+  the memory-limit fix, remediation steps). **That delta is the demo.**
+
+### 6d. Train on your own Q&A
+- [ ] Train tab → **⬆ Upload CSV / JSONL** → pick a file (CSV columns
+  `question,reference_answer[,context]` or `prompt,completion`) → it converts, lands in the
+  dropdown, and you train/retrain on it exactly like v1/v2.
+
+> **Persistence:** custom cards, uploaded tables, and retrained models live on the PVCs — install
+> with `--set persistence.storageClass=gp3` (the default) so they survive restarts. With
+> `persistence.enabled=false` they're ephemeral (fine for a demo).
 
 ## 7. (Optional) Expose without port-forward
 - **LoadBalancer** (gets an external address):

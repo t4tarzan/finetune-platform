@@ -104,9 +104,9 @@ pre-trained model — installed with one Helm command, runs fully offline.</p>
 <h2>What you get</h2>
 <div class="feature-grid">
   <div class="feature-card"><h4><span class="badge green">Baked</span> Everything in the image</h4><p>Base models (Qwen2.5 0.5B + 1.5B), 43 SRE observability tables, training data, and a pre-trained <code>sre-assistant</code> — no downloads.</p></div>
-  <div class="feature-card"><h4><span class="badge blue">Cards</span> Query your data</h4><p>One-tap preset cards (pods at risk, OOM offenders…) and a "Query data" mode that writes SQL from plain English.</p></div>
-  <div class="feature-card"><h4><span class="badge green">Tune</span> Train &amp; retrain</h4><p>Fine-tune on bundled data, then <em>Continue from fine-tuned</em> on more data — the answers improve.</p></div>
-  <div class="feature-card"><h4><span class="badge blue">Yours</span> Bring your own data</h4><p>Upload a CSV/JSONL — it converts and lands in the dropdown, ready to retrain on.</p></div>
+  <div class="feature-card"><h4><span class="badge blue">Cards</span> Query your data</h4><p>One-tap preset cards (pods at risk, OOM offenders…) and a "Query data" mode that writes SQL from plain English. <strong>Add your own card</strong> with a title + <code>SELECT</code> — no rebuild.</p></div>
+  <div class="feature-card"><h4><span class="badge green">Tune</span> Train &amp; retrain</h4><p>Fine-tune on bundled data, then <em>Continue from fine-tuned</em> on more data — the answers measurably improve.</p></div>
+  <div class="feature-card"><h4><span class="badge blue">Yours</span> Bring your own data</h4><p>Two ways, no code: <strong>⬆ Data table</strong> uploads a CSV as a queryable table (cards + text-to-SQL see it); <strong>⬆ Upload CSV/JSONL</strong> adds training data to the dropdown, ready to retrain on.</p></div>
 </div>
 
 <figure><img src="data:image/png;base64,{chat_b64}" alt="Chat with cards + a query result"><figcaption>The chat — preset cards and text-to-SQL answer straight from the bundled data.</figcaption></figure>
@@ -135,14 +135,38 @@ kubectl -n finetune port-forward svc/finetune-platform 7100:7100
 # open http://localhost:7100</code></pre>
 <p>Or expose a URL with <code>--set service.type=LoadBalancer</code>.</p>
 
-<h2>Try it</h2>
+<h2>Explore the data (Chat tab)</h2>
 <ul>
-  <li><strong>Chat tab</strong> → tap a card (e.g. <em>Top OOM offenders</em>) → a table from your data.</li>
-  <li>Tick <strong>🗄️ Query data</strong>, ask <code>top 5 namespaces by alert count</code> → it writes the SQL and answers.</li>
-  <li>Pick <strong>sre-assistant</strong> in the model dropdown → ask an SRE question.</li>
-  <li><strong>Train tab</strong> → pick <code>sre_qa_v1</code> → train → <em>Export &amp; Serve</em> → then <code>sre_qa_v2</code> with <em>Continue from fine-tuned</em> → retrain → the answer improves.</li>
-  <li><strong>⬆ Upload CSV / JSONL</strong> → bring your own data → retrain on it.</li>
+  <li><strong>Tap a card</strong> — e.g. <em>Top OOM offenders</em> or <em>CrashLoopBackOff pods</em> → a live table from the bundled SRE data appears.</li>
+  <li>Tick <strong>🗄️ Query data</strong>, ask in plain English: <code>top 5 namespaces by alert count</code> → it writes the SQL and shows the answer.</li>
+  <li>Pick <strong>sre-assistant (fine-tuned)</strong> in the model dropdown → ask an SRE question → a grounded remediation answer.</li>
 </ul>
+
+<h2>Make it yours — no code, no rebuild</h2>
+<p>Both are buttons on the Chat tab, next to the cards. Nothing to redeploy.</p>
+<ul>
+  <li><strong>➕ Card</strong> → give it a <em>title</em> and a <code>SELECT …</code> query → <em>Save</em>. It's validated (read-only only), saved to <code>data/cards.json</code> on the volume, and shows up in the strip for everyone. Hit <strong>✕</strong> on a custom card to remove it.</li>
+  <li><strong>⬆ Data table</strong> → upload a CSV of your <em>own</em> observability data → name the table → it becomes a queryable DuckDB table. Your cards <em>and</em> the 🗄️ text-to-SQL chat can now query it immediately.</li>
+</ul>
+
+<h2>See training improve — the v1 → v2 demo</h2>
+<p>This is the core loop: train once, ask a hard question, then <em>continue from the fine-tuned
+model</em> on more data and watch the same answer get sharper. Two datasets ship for exactly this —
+<code>sre_qa_v1</code> (141 rows) and <code>sre_qa_v2</code> (241 rows, with the harder OOM/remediation cases).</p>
+<ol>
+  <li><strong>Train v1.</strong> Train tab → dataset <code>sre_qa_v1</code> → <strong>Start Training</strong> → watch the loss curve settle → <strong>Export &amp; Serve</strong>. The new model lands in the Chat model dropdown.</li>
+  <li><strong>Ask the hero question.</strong> Chat tab → select the v1 model → ask:
+    <br><code>Our ledger-svc pod in finance was flagged for OOM Risk at high risk. Give the full root cause and remediation.</code>
+    <br>v1 answers, but generically — it hasn't seen many OOM-remediation examples yet.</li>
+  <li><strong>Retrain into v2.</strong> Train tab → dataset <code>sre_qa_v2</code> → tick <strong>Continue from fine-tuned</strong> and pick your v1 model → <strong>Start Training</strong>. The loss curve starts <em>lower</em> than v1 did (it's building on v1, not from scratch) and settles lower. → <strong>Export &amp; Serve</strong>.</li>
+  <li><strong>Ask again.</strong> Select the v2 model, ask the <em>same</em> question → the answer is now specific: OOMKill (exit 137) cause, the memory-limit fix, and the remediation steps. That delta is the demo.</li>
+</ol>
+<div class="note"><strong>Want to train on your own Q&amp;A?</strong> Train tab → <strong>⬆ Upload CSV / JSONL</strong>.
+CSV columns <code>question,reference_answer[,context]</code> (or <code>prompt,completion</code>) — it converts to
+JSONL, lands in the dropdown, and you train/retrain on it exactly like v1/v2.</div>
+<div class="warn"><strong>Persistence:</strong> custom cards, uploaded tables, and retrained models live on the
+PVCs — install with <code>--set persistence.storageClass=gp3</code> (the default) so they survive restarts.
+With <code>persistence.enabled=false</code> they're ephemeral (fine for a quick demo).</div>
 <figure><img src="data:image/png;base64,{train_b64}" alt="Train tab — dataset dropdown, upload, loss curve"><figcaption>The Train tab — dataset dropdown, upload-your-own-data, Continue-from-fine-tuned, and the live loss curve.</figcaption></figure>
 
 <h2>Air-gapped clusters</h2>
