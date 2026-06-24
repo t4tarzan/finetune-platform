@@ -42,6 +42,7 @@ COPY . .
 # first boot, so the seed works identically for `docker compose` and Kubernetes
 # (no init container needed).
 RUN python scripts/gen_sre_tables.py && python scripts/gen_sre_qa.py \
+ && python scripts/gen_sre_demo_split.py \
  && mkdir -p /app/_bundled \
  && cp -r /app/data   /app/_bundled/data \
  && cp -r /app/models /app/_bundled/models
