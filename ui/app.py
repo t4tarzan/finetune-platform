@@ -18,7 +18,7 @@ import threading
 import time
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -131,6 +131,29 @@ def _disk_inference_models():
     except FileNotFoundError:
         pass
     return out
+
+
+def _load_inference_model(model_path: str, model_name: str, timeout: int = 600):
+    """Load a model (HF id or local merged dir) into the inference server (:7200)."""
+    import urllib.request
+    import urllib.parse
+    port = config.get("ports", {}).get("inference_api", 7200)
+    qs = urllib.parse.urlencode({"model_path": model_path, "model_name": model_name})
+    urllib.request.urlopen(urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/manage/load?{qs}", data=b"", method="POST"), timeout=timeout)
+
+
+def _unload_inference_model(model_name: str):
+    """Best-effort unload from the inference server (frees RAM between evals)."""
+    import urllib.request
+    import urllib.parse
+    port = config.get("ports", {}).get("inference_api", 7200)
+    qs = urllib.parse.urlencode({"model_name": model_name})
+    try:
+        urllib.request.urlopen(urllib.request.Request(
+            f"http://127.0.0.1:{port}/api/manage/unload?{qs}", data=b"", method="POST"), timeout=30)
+    except Exception:
+        pass
 
 
 # ── Request models ──────────────────────────────────────────
@@ -416,6 +439,69 @@ def get_leaderboard(niche: Optional[str] = Query(None)):
     return data
 
 
+@app.post("/api/evaluate")
+def evaluate_niche(
+    niche: str = Query(..., description="Niche to evaluate (must already be exported)"),
+    test_set_path: str = Query(..., description="JSONL test set ({question,reference_answer} or {prompt,completion})"),
+    base_model: str = Query("", description="Base model for the baseline; defaults to the base the adapter was fine-tuned from"),
+    max_questions: int = Query(10, ge=1, le=500, description="Cap eval questions (CPU is slow)"),
+):
+    """Evaluate the base model (baseline) and the fine-tuned model on a JSONL test set,
+    recording both to the leaderboard with the delta. Both are served via the inference
+    server (:7200) for an apples-to-apples comparison."""
+    from pipeline.eval_harness import EvalHarness
+
+    if not os.path.exists(test_set_path):
+        raise HTTPException(404, f"Test set not found: {test_set_path}")
+    served = niche.replace("_", "-").lower()
+    dm = next((d for d in _disk_inference_models() if d["name"] == served), None)
+    if dm is None:
+        raise HTTPException(404, f"No exported model for niche '{niche}'. Export it first.")
+
+    harness = EvalHarness(config)
+
+    # Default the baseline to the exact base the adapter was fine-tuned from (recorded
+    # in the adapter dir). The fine-tuned model is that base + the LoRA delta, so this
+    # keeps the comparison apples-to-apples and backend-appropriate (the UI's training
+    # base-model picker is an MLX 4-bit id that the HF inference server can't load).
+    if not base_model:
+        from pipeline.export_hf import _resolve_base_model
+        adapter_dir = os.path.join(config.get("paths", {}).get("adapter_path", "models/adapters"), niche)
+        base_model = _resolve_base_model(adapter_dir, config)
+
+    # 1) Baseline — serve the base model, evaluate, then unload to free RAM.
+    base_name = f"{served}-base"
+    try:
+        _load_inference_model(base_model, base_name)
+    except Exception as e:
+        raise HTTPException(500, f"Failed to load base model '{base_model}': {e}")
+    try:
+        base_score = harness.evaluate(base_name, test_set_path, model_type="inference", max_questions=max_questions)
+        base_score["model_name"] = base_model
+        leaderboard.set_baseline(niche, base_model, base_score)
+    finally:
+        _unload_inference_model(base_name)
+
+    # 2) Fine-tuned — serve the merged model, evaluate, record the iteration + delta.
+    try:
+        _load_inference_model(dm["path"], served)
+    except Exception as e:
+        raise HTTPException(500, f"Failed to load fine-tuned model '{served}': {e}")
+    ft_score = harness.evaluate(served, test_set_path, model_type="inference", max_questions=max_questions)
+    ft_score["model_name"] = served
+
+    train_rows = 0
+    meta = os.path.join("models", "adapters", niche, "training_metadata.json")
+    if os.path.exists(meta):
+        try:
+            train_rows = json.load(open(meta)).get("training_examples", 0)
+        except Exception:
+            pass
+    leaderboard.add_iteration(niche, ft_score, training_rows=train_rows)
+
+    return leaderboard.get_niche_leaderboard(niche)
+
+
 # ── Model Discovery ────────────────────────────────────────
 
 @app.post("/api/discover")
@@ -615,7 +701,8 @@ def list_datasets():
 def list_adapters():
     """List LoRA adapters already on disk (for the 'continue from fine-tuned'
     / incremental-retraining picker). An adapter is a dir under models/adapters
-    containing adapters.safetensors."""
+    containing an adapter weights file — MLX writes adapters.safetensors, the
+    HuggingFace/CPU backend writes adapter_model.safetensors."""
     base = os.path.join(
         config.get("paths", {}).get("models", "models"), "adapters"
     )
@@ -623,9 +710,44 @@ def list_adapters():
     if os.path.isdir(base):
         for d in sorted(os.listdir(base)):
             full = os.path.join(base, d)
-            if os.path.isfile(os.path.join(full, "adapters.safetensors")):
+            if (os.path.isfile(os.path.join(full, "adapters.safetensors"))
+                    or os.path.isfile(os.path.join(full, "adapter_model.safetensors"))):
                 adapters.append({"niche": d, "path": full})
     return {"adapters": adapters}
+
+
+@app.get("/api/platform")
+def platform_info():
+    """Report the active training backend so the UI offers base models that actually
+    run here. MLX (Apple Silicon, native) loads 4-bit quantized models via Metal; the
+    HuggingFace/CPU backend (Linux, including Docker) downloads full-precision (fp32)
+    HuggingFace models — 4-bit/MLX ids don't apply and are silently mapped to a CPU
+    default, so we must not offer them here."""
+    from pipeline.training_manager import mlx_available
+    if mlx_available():
+        return {
+            "backend": "mlx",
+            "precision": "4-bit quantized (MLX / Apple Silicon)",
+            "default": "mlx-community/Qwen2.5-7B-Instruct-4bit",
+            "note": "4-bit quantized models, loaded with MLX on Apple Silicon (Metal).",
+            "models": [
+                {"id": "mlx-community/Qwen2.5-7B-Instruct-4bit", "label": "Qwen2.5-7B (4-bit) — recommended"},
+                {"id": "mlx-community/Qwen2.5-0.5B-Instruct-4bit", "label": "Qwen2.5-0.5B (4-bit) — fast prototyping"},
+                {"id": "mlx-community/Qwen2.5-1.5B-Instruct-4bit", "label": "Qwen2.5-1.5B (4-bit)"},
+                {"id": "mlx-community/Mistral-7B-Instruct-v0.3-4bit", "label": "Mistral-7B (4-bit)"},
+                {"id": "mlx-community/Llama-3.2-3B-Instruct-4bit", "label": "Llama 3.2-3B (4-bit)"},
+            ],
+        }
+    return {
+        "backend": "hf-cpu",
+        "precision": "full precision fp32 (HuggingFace / CPU)",
+        "default": "Qwen/Qwen2.5-0.5B-Instruct",
+        "note": "Downloaded from HuggingFace and trained in full precision (fp32) on CPU — no quantization. (4-bit / MLX models apply only to a native Apple-Silicon deployment.)",
+        "models": [
+            {"id": "Qwen/Qwen2.5-0.5B-Instruct", "label": "Qwen2.5-0.5B-Instruct — fast (default)"},
+            {"id": "Qwen/Qwen2.5-1.5B-Instruct", "label": "Qwen2.5-1.5B-Instruct — slower, higher quality"},
+        ],
+    }
 
 
 @app.get("/api/train/niches")
@@ -645,6 +767,87 @@ def list_niches():
                     "path": full,
                 })
     return {"niches": niches}
+
+
+@app.post("/api/data/upload-csv")
+async def upload_csv(request: Request, niche: str = Query(..., description="Dataset / niche name (folder)")):
+    """
+    Upload a CSV dataset, convert it to the training schema, and save it as
+    data/<niche>/verified_train.jsonl (ready for the normal training flow).
+
+    The CSV must have a header row with ONE of these column sets:
+      - question, reference_answer  (optional: context)   ← canonical Q&A
+      - prompt, completion                                ← raw LM pairs
+    Column names are matched case-insensitively. Rows missing the required
+    fields are skipped. Send the raw CSV bytes as the request body.
+    """
+    import csv as _csv
+    import io as _io
+    import re as _re
+
+    if not _re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", niche or ""):
+        raise HTTPException(400, "Invalid niche name. Use alphanumeric, hyphens, or underscores.")
+
+    raw = await request.body()
+    if not raw:
+        raise HTTPException(400, "Empty upload. Send the CSV file as the request body.")
+    try:
+        text = raw.decode("utf-8-sig")  # tolerate a BOM from Excel exports
+    except UnicodeDecodeError:
+        raise HTTPException(400, "CSV must be UTF-8 encoded.")
+
+    reader = _csv.DictReader(_io.StringIO(text))
+    if not reader.fieldnames:
+        raise HTTPException(400, "CSV has no header row.")
+
+    # Case-insensitive header → actual column name map.
+    cols = {(h or "").strip().lower(): h for h in reader.fieldnames}
+    if "question" in cols and "reference_answer" in cols:
+        schema, q, a, ctx = "qa", cols["question"], cols["reference_answer"], cols.get("context")
+    elif "prompt" in cols and "completion" in cols:
+        schema, q, a, ctx = "prompt_completion", cols["prompt"], cols["completion"], None
+    else:
+        raise HTTPException(
+            400,
+            "CSV header must contain either 'question' + 'reference_answer' (optional 'context'), "
+            "or 'prompt' + 'completion'. Found: " + ", ".join(reader.fieldnames),
+        )
+
+    written, skipped = [], 0
+    for row in reader:
+        question = (row.get(q) or "").strip()
+        answer = (row.get(a) or "").strip()
+        if not question or not answer:
+            skipped += 1
+            continue
+        if schema == "qa":
+            out = {"question": question, "reference_answer": answer}
+            context = (row.get(ctx) or "").strip() if ctx else ""
+            if context:
+                out["context"] = context
+        else:
+            out = {"prompt": question, "completion": answer}
+        written.append(out)
+
+    if not written:
+        raise HTTPException(400, f"No valid rows found (skipped {skipped}). Check that the data columns are filled in.")
+
+    data_dir = config.get("paths", {}).get("data", "data")
+    out_dir = os.path.join(data_dir, niche)
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "verified_train.jsonl")
+    with open(out_path, "w") as f:
+        for r in written:
+            f.write(json.dumps(r) + "\n")
+
+    return {
+        "status": "ok",
+        "niche": niche,
+        "output_path": out_path,
+        "rows_written": len(written),
+        "rows_skipped": skipped,
+        "schema_detected": schema,
+    }
 
 
 # ── Export ──────────────────────────────────────────────────
@@ -744,12 +947,14 @@ def inference_load_model(
     """Load a model into the running inference server."""
     import urllib.request
     port = config.get("ports", {}).get("inference_api", 7200)
-    url = f"http://127.0.0.1:{port}/api/manage/load?model_path={model_path}"
-    if model_name:
-        url += f"&model_name={model_name}"
+    import urllib.parse
+    qs = urllib.parse.urlencode({"model_path": model_path, **({"model_name": model_name} if model_name else {})})
+    url = f"http://127.0.0.1:{port}/api/manage/load?{qs}"
     try:
-        resp = urllib.request.urlopen(url, timeout=120)
-        return json.loads(resp.read())
+        # manage/load is a POST endpoint — send an empty POST body, not a GET.
+        req = urllib.request.Request(url, data=b"", method="POST")
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            return json.loads(resp.read())
     except Exception as e:
         return {"error": str(e)}
 
@@ -759,10 +964,12 @@ def inference_unload_model(model_name: str = Query(...)):
     """Unload a model from the inference server."""
     import urllib.request
     port = config.get("ports", {}).get("inference_api", 7200)
-    url = f"http://127.0.0.1:{port}/api/manage/unload?model_name={model_name}"
+    import urllib.parse
+    url = f"http://127.0.0.1:{port}/api/manage/unload?{urllib.parse.urlencode({'model_name': model_name})}"
     try:
-        resp = urllib.request.urlopen(url, timeout=10)
-        return json.loads(resp.read())
+        req = urllib.request.Request(url, data=b"", method="POST")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return json.loads(resp.read())
     except Exception as e:
         return {"error": str(e)}
 
@@ -1961,7 +2168,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <div id="inf-models-list" style="font-size:11px;"></div>
       </div>
       <div style="margin-top:6px;">
-        <input id="inf-model-path" value="mlx-community/Qwen2.5-7B-Instruct-4bit" placeholder="HF model path" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;" />
+        <input id="inf-model-path" value="Qwen/Qwen2.5-0.5B-Instruct" placeholder="HF id or local merged-model dir" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;" />
         <button onclick="loadInferenceModel()" style="margin-top:4px;padding:4px 8px;font-size:11px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;width:100%;">⬇ Load Model</button>
       </div>
     </div>
@@ -2038,9 +2245,26 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <label>Dataset Type</label>
           <select id="ft-dataset-type">
             <option value="local">Local JSONL (point to existing file)</option>
+            <option value="csv">Upload CSV (convert to JSONL)</option>
             <option value="bigset">Auto-Generate (from description)</option>
           </select>
-          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Local = use your own JSONL file. Auto-Generate = creates data using available models.</span>
+          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Local = use your own JSONL file. Upload CSV = bring an external CSV and convert it. Auto-Generate = creates data using available models.</span>
+        </div>
+        <div class="form-group" id="ft-csv-group" style="display:none">
+          <label>Upload CSV Dataset</label>
+          <div style="font-size:10px;color:var(--text-secondary);background:var(--surface2);padding:8px 10px;border-radius:4px;margin-bottom:6px;line-height:1.5;">
+            <strong>Required schema</strong> — your CSV must have a header row with ONE of:
+            <ul style="margin:4px 0 4px 16px;padding:0;">
+              <li><code>question</code>, <code>reference_answer</code> &nbsp;(optional <code>context</code>)</li>
+              <li><code>prompt</code>, <code>completion</code></li>
+            </ul>
+            Column names are case-insensitive. One Q&amp;A pair per row; rows missing the required fields are skipped. Converts to <code>data/&lt;niche&gt;/verified_train.jsonl</code>.
+          </div>
+          <input id="ft-csv-file" type="file" accept=".csv,text/csv" style="font-size:11px;" />
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <button id="ft-csv-btn" onclick="uploadCsv()" style="flex:1;padding:6px 12px;font-size:11px;background:var(--success);color:#fff;border:none;border-radius:4px;cursor:pointer;">⬆️ Upload &amp; Convert</button>
+          </div>
+          <div id="ft-csv-status" style="display:none;margin-top:6px;padding:6px 8px;border-radius:4px;font-size:11px;"></div>
         </div>
         <div class="form-group" id="ft-data-path-group">
           <label>Dataset <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">— pick a bundled dataset or type a path</span></label>
@@ -2067,15 +2291,11 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
         <!-- Step 2: Model -->
         <div class="form-section"><h4>🤖 Base Model</h4></div>
         <div class="form-group">
-          <label>Base Model <span style="font-size:10px;color:var(--text-secondary);font-weight:400;">— 7B recommended starting point</span></label>
+          <label>Base Model <span id="ft-base-model-hint" style="font-size:10px;color:var(--text-secondary);font-weight:400;">— detecting backend…</span></label>
           <select id="ft-base-model">
-            <option value="mlx-community/Qwen2.5-7B-Instruct-4bit">Qwen2.5-7B (4-bit) — recommended</option>
-            <option value="mlx-community/Qwen2.5-0.5B-Instruct-4bit">Qwen2.5-0.5B (4-bit) — fast prototyping</option>
-            <option value="mlx-community/Qwen2.5-1.5B-Instruct-4bit">Qwen2.5-1.5B (4-bit)</option>
-            <option value="mlx-community/Mistral-7B-Instruct-v0.3-4bit">Mistral-7B (4-bit)</option>
-            <option value="mlx-community/Llama-3.2-3B-Instruct-4bit">Llama 3.2-3B (4-bit)</option>
+            <option value="Qwen/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B-Instruct</option>
           </select>
-          <span style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Larger models = better accuracy, more memory. 7B needs ~8GB for training.</span>
+          <span id="ft-base-model-note" style="font-size:10px;color:var(--text-secondary);margin-top:2px;display:block;">Loading available base models for this deployment…</span>
         </div>
 
         <div class="form-group">
@@ -2130,6 +2350,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
           <button class="btn btn-primary" id="ft-start-btn" onclick="startTraining()" disabled style="opacity:0.4;cursor:not-allowed;">▶ Start Training — setup dataset first</button>
           <button class="btn btn-danger" id="ft-stop-btn" onclick="stopTraining()" style="display:none">⏹ Stop Training</button>
           <button class="btn btn-outline" onclick="exportModel(this)">⬆ Export &amp; Serve Fine-Tuned Model</button>
+          <button class="btn btn-outline" onclick="evaluateModel(this)">📊 Evaluate vs Baseline (updates leaderboard)</button>
         </div>
       </div>
 
@@ -2190,17 +2411,29 @@ function switchTab(name, el) {
 let datasetReady = false;
 
 function useLocalDataset() {
-  const path = document.getElementById('ft-data-path').value;
-  if (!path) { alert('Enter a dataset path first.'); return; }
+  let path = document.getElementById('ft-data-path').value.trim();
+  // Fall back to the dropdown selection: re-picking the already-selected option
+  // fires no 'change' event, so pickDataset() may not have copied it into the field.
+  if (!path) {
+    const sel = document.getElementById('ft-dataset-pick');
+    if (sel && sel.value) {
+      path = sel.value;
+      document.getElementById('ft-data-path').value = path;
+    }
+  }
+  if (!path) { alert('Pick a dataset from the dropdown, or type a path first.'); return; }
   document.getElementById('ft-dataset-ready-badge').style.display = '';
   setDatasetReady(true);
 }
 
 document.getElementById('ft-dataset-type').addEventListener('change', async function() {
   const isBigset = this.value === 'bigset';
-  document.getElementById('ft-data-path-group').style.display = isBigset ? 'none' : '';
+  const isCsv = this.value === 'csv';
+  document.getElementById('ft-data-path-group').style.display = (isBigset || isCsv) ? 'none' : '';
+  document.getElementById('ft-csv-group').style.display = isCsv ? '' : 'none';
   document.getElementById('ft-desc-group').style.display = isBigset ? '' : 'none';
   document.getElementById('ft-dataset-status').style.display = 'none';
+  document.getElementById('ft-csv-status').style.display = 'none';
   document.getElementById('ft-dataset-ready-badge').style.display = 'none';
   setDatasetReady(false);
 
@@ -2262,6 +2495,52 @@ async function generateDataset() {
   }
   btn.disabled = false;
   btn.textContent = '🔄 Generate Dataset (30 rows)';
+}
+
+async function uploadCsv() {
+  const niche = document.getElementById('ft-niche').value.trim();
+  const fileInput = document.getElementById('ft-csv-file');
+  const status = document.getElementById('ft-csv-status');
+  if (!niche) { alert('Enter a niche / domain name first.'); return; }
+  if (!fileInput.files || !fileInput.files[0]) { alert('Choose a CSV file first.'); return; }
+
+  const btn = document.getElementById('ft-csv-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Uploading...';
+  status.style.display = '';
+  status.style.background = 'rgba(88,166,255,0.15)';
+  status.style.color = 'var(--accent)';
+  status.textContent = 'Uploading and converting CSV...';
+
+  try {
+    const res = await fetch('/api/data/upload-csv?niche=' + encodeURIComponent(niche), {
+      method: 'POST',
+      headers: {'Content-Type': 'text/csv'},
+      body: fileInput.files[0],
+    });
+    const data = await res.json();
+    if (res.ok && data.status === 'ok') {
+      status.style.background = 'rgba(63,185,80,0.15)';
+      status.style.color = 'var(--success)';
+      status.textContent = '✅ ' + data.rows_written + ' rows converted ('
+        + data.schema_detected + ' schema'
+        + (data.rows_skipped ? ', ' + data.rows_skipped + ' skipped' : '')
+        + ') → ' + data.output_path;
+      document.getElementById('ft-data-path').value = data.output_path;
+      document.getElementById('ft-dataset-ready-badge').style.display = '';
+      setDatasetReady(true);
+    } else {
+      status.style.background = 'rgba(248,81,73,0.15)';
+      status.style.color = 'var(--danger)';
+      status.textContent = '❌ ' + (data.detail || data.error || 'Upload failed');
+    }
+  } catch(e) {
+    status.style.background = 'rgba(248,81,73,0.15)';
+    status.style.color = 'var(--danger)';
+    status.textContent = '❌ Error: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.textContent = '⬆️ Upload & Convert';
 }
 
 function setDatasetReady(ready) {
@@ -2477,6 +2756,41 @@ async function loadDatasets() {
       o.textContent = d.label + (d.rows ? ' (' + d.rows + ' rows)' : '');
       sel.appendChild(o);
     });
+  } catch (e) { console.error(e); }
+}
+
+// Populate the base-model picker from the ACTIVE backend (/api/platform): MLX
+// (Apple Silicon) offers 4-bit quantized models; the HuggingFace/CPU backend offers
+// full-precision HF models. Avoids listing MLX-only 4-bit ids that don't run on CPU.
+async function loadBaseModels() {
+  try {
+    const p = await (await fetch('/api/platform')).json();
+    const sel = document.getElementById('ft-base-model');
+    if (sel && Array.isArray(p.models) && p.models.length) {
+      const keep = sel.value;
+      sel.innerHTML = '';
+      p.models.forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.id; o.textContent = m.label;
+        sel.appendChild(o);
+      });
+      sel.value = (p.models.some(m => m.id === keep) ? keep : (p.default || p.models[0].id));
+    }
+    const hint = document.getElementById('ft-base-model-hint');
+    if (hint) hint.textContent = p.backend === 'mlx'
+      ? '— Apple Silicon · MLX · 4-bit quantized'
+      : '— CPU · HuggingFace · full precision (fp32)';
+    const note = document.getElementById('ft-base-model-note');
+    if (note) note.textContent = p.note || '';
+    // Same backend-awareness for the sidebar "Load Model" bar: its old default was an
+    // MLX 4-bit id the HF inference server (:7200) can't load on Linux/CPU.
+    const inf = document.getElementById('inf-model-path');
+    if (inf) {
+      inf.value = p.default || inf.value;
+      inf.placeholder = p.backend === 'mlx'
+        ? 'MLX model id or a local merged-model dir'
+        : 'HF id (e.g. Qwen/Qwen2.5-0.5B-Instruct) or a local merged-model dir';
+    }
   } catch (e) { console.error(e); }
 }
 
@@ -2768,6 +3082,41 @@ async function exportModel(btn) {
   }
 }
 
+async function evaluateModel(btn) {
+  const niche = document.getElementById('ft-niche').value;
+  const testSet = document.getElementById('ft-data-path').value;
+  if (!niche || !testSet) { alert('Set a niche and a dataset path first.'); return; }
+  if (btn) { btn.disabled = true; btn.style.opacity = 0.5; }
+  document.getElementById('ft-message').textContent = 'Evaluating base vs fine-tuned on the test set… (CPU — can take a minute or two)';
+  try {
+    // Omit base_model: the backend resolves the exact base the adapter was fine-tuned
+    // from, so the baseline matches the fine-tuned model's base on either backend.
+    const qs = '?niche='+encodeURIComponent(niche)+'&test_set_path='+encodeURIComponent(testSet)
+             + '&max_questions=10';
+    const res = await fetch('/api/evaluate'+qs, {method:'POST'});
+    if (!res.ok) {
+      let msg = 'Evaluation failed ('+res.status+')';
+      try { const j = await res.json(); if (j.detail) msg = 'Evaluation failed: '+j.detail; } catch (e) {}
+      document.getElementById('ft-message').textContent = msg;
+      return;
+    }
+    const lb = await res.json();
+    const it = (lb.iterations || [])[lb.iterations.length - 1] || {};
+    const baseAcc = (lb.baseline || {}).accuracy;
+    const acc = (it.results || {}).accuracy;
+    const d = (it.delta || {}).accuracy;
+    const pct = v => v == null ? '—' : (v*100).toFixed(1)+'%';
+    const sign = d != null && d >= 0 ? '+' : '';
+    document.getElementById('ft-message').textContent =
+      'Eval done — accuracy: baseline '+pct(baseAcc)+' → fine-tuned '+pct(acc)+' ('+sign+pct(d)+'). See Leaderboard.';
+    loadLeaderboard();
+  } catch (e) {
+    document.getElementById('ft-message').textContent = 'Evaluation failed: '+e;
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = 1; }
+  }
+}
+
 function formatDuration(seconds) {
   if (seconds < 60) return Math.round(seconds)+'s';
   if (seconds < 3600) return Math.floor(seconds/60)+'m '+Math.round(seconds%60)+'s';
@@ -3052,6 +3401,7 @@ loadLeaderboard();
 loadDocs();
 loadAdapters();
 loadDatasets();
+loadBaseModels();
 checkInferenceStatus();
 initTrainState();
 setInterval(loadLeaderboard, 30000);
