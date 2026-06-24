@@ -1,0 +1,16 @@
+id,name,priority,category,description,created_at
+1,Memory Leak Detection,P1,memory,Predict container memory exhaustion before OOMKill,2026-05-24 12:00:00
+2,OOM Risk Forecast,P1,memory,Forecast out-of-memory kill probability per pod,2026-05-24 12:00:00
+3,CPU Throttling,P2,cpu,Detect sustained CFS throttling impacting latency,2026-05-24 12:00:00
+4,Pod CrashLoop Prediction,P1,availability,Predict CrashLoopBackOff from restart trends,2026-05-24 12:00:00
+5,Disk Pressure,P2,storage,Predict node ephemeral-storage eviction,2026-05-24 12:00:00
+6,Node NotReady Risk,P1,node,Forecast node kubelet/PLEG failures,2026-05-24 12:00:00
+7,Network Latency Spike,P2,network,Detect p99 latency / packet-drop regressions,2026-05-24 12:00:00
+8,DNS Resolution Failures,P2,network,Predict CoreDNS degradation,2026-05-24 12:00:00
+9,Replica Starvation,P2,availability,Detect ready-replica shortfalls vs desired,2026-05-24 12:00:00
+10,GC Pause Storms,P3,memory,JVM GC pause clustering / heap pressure,2026-05-24 12:00:00
+11,Cert Expiry,P2,security,Upcoming TLS certificate expiry,2026-05-24 12:00:00
+12,Connection Pool Exhaustion,P1,availability,DB/HTTP connection pool saturation,2026-05-24 12:00:00
+13,HTTP Error Surge,P2,availability,5xx error-rate anomaly,2026-05-24 12:00:00
+14,Cluster Capacity,P2,node,Cluster CPU/mem capacity headroom,2026-05-24 12:00:00
+15,Security Policy Violation,P3,security,Unauthorized access / policy breaches,2026-05-24 12:00:00

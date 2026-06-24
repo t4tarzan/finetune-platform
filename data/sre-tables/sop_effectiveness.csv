@@ -1,0 +1,41 @@
+sop_id,sop_name,sop_path,domain,total_matches,avg_similarity,max_similarity,times_actioned,useful_count,not_useful_count,success_rate,first_matched_at,last_matched_at,staleness_days,status,updated_at
+1,Node Runbook 01: DiskPressure eviction recovery,sops/node/runbook-01.md,node,71,0.8095,0.9076,41,15,56,0.2113,2026-05-02 07:56:08,2026-06-14 20:54:26,27,active,2026-06-23 12:00:00
+2,Storage Runbook 02: OOMKilled remediation,sops/storage/runbook-02.md,storage,296,0.7915,0.9489,226,65,231,0.2196,2026-05-04 04:15:38,2026-05-28 04:30:30,17,active,2026-06-23 12:00:00
+3,Security Runbook 03: CFS throttling tuning,sops/security/runbook-03.md,security,233,0.6233,0.9101,206,208,25,0.8927,2026-05-22 03:31:30,2026-06-21 21:21:50,7,active,2026-06-23 12:00:00
+4,Network Runbook 04: Cert rotation,sops/network/runbook-04.md,network,791,0.7815,0.956,49,33,758,0.0417,2026-05-01 23:53:35,2026-06-01 19:25:26,11,active,2026-06-23 12:00:00
+5,Node Runbook 05: Connection pool sizing,sops/node/runbook-05.md,node,661,0.7253,0.9411,38,573,88,0.8669,2026-04-23 07:28:55,2026-06-17 13:12:43,15,stale,2026-06-23 12:00:00
+6,Availability Runbook 06: CFS throttling tuning,sops/availability/runbook-06.md,availability,676,0.747,0.94,589,150,526,0.2219,2026-04-24 03:35:05,2026-05-25 10:07:23,9,active,2026-06-23 12:00:00
+7,Storage Runbook 07: PDB & graceful shutdown,sops/storage/runbook-07.md,storage,745,0.6141,0.9129,335,419,326,0.5624,2026-05-03 03:40:43,2026-05-31 04:44:18,8,stale,2026-06-23 12:00:00
+8,Node Runbook 08: Connection pool sizing,sops/node/runbook-08.md,node,723,0.8665,0.9219,131,587,136,0.8119,2026-05-03 15:27:16,2026-06-03 19:39:06,0,active,2026-06-23 12:00:00
+9,Memory Runbook 09: Connection pool sizing,sops/memory/runbook-09.md,memory,710,0.7794,0.9136,337,682,28,0.9606,2026-05-01 17:52:33,2026-06-13 01:52:51,36,active,2026-06-23 12:00:00
+10,Availability Runbook 10: PDB & graceful shutdown,sops/availability/runbook-10.md,availability,235,0.8402,0.9769,20,59,176,0.2511,2026-05-21 15:19:30,2026-06-22 16:00:03,30,active,2026-06-23 12:00:00
+11,Availability Runbook 11: CoreDNS restart,sops/availability/runbook-11.md,availability,640,0.6145,0.9736,391,438,202,0.6844,2026-04-17 12:57:20,2026-06-03 23:07:08,13,stale,2026-06-23 12:00:00
+12,Node Runbook 12: CrashLoopBackOff triage,sops/node/runbook-12.md,node,731,0.7416,0.9764,722,320,411,0.4378,2026-04-24 05:15:21,2026-06-20 09:17:15,12,active,2026-06-23 12:00:00
+13,Security Runbook 13: CFS throttling tuning,sops/security/runbook-13.md,security,166,0.8239,0.9556,21,77,89,0.4639,2026-05-06 03:24:45,2026-06-05 03:41:29,22,stale,2026-06-23 12:00:00
+14,Availability Runbook 14: PDB & graceful shutdown,sops/availability/runbook-14.md,availability,702,0.6593,0.9284,355,494,208,0.7037,2026-05-14 10:05:08,2026-06-15 21:48:01,24,active,2026-06-23 12:00:00
+15,Node Runbook 15: Connection pool sizing,sops/node/runbook-15.md,node,65,0.7134,0.9421,26,65,0,1.0,2026-05-21 07:09:25,2026-05-25 06:34:16,25,active,2026-06-23 12:00:00
+16,Availability Runbook 16: HPA scaling response,sops/availability/runbook-16.md,availability,499,0.8546,0.9853,490,240,259,0.481,2026-04-24 21:47:52,2026-06-12 02:18:01,39,active,2026-06-23 12:00:00
+17,Network Runbook 17: Cert rotation,sops/network/runbook-17.md,network,103,0.672,0.9125,44,45,58,0.4369,2026-04-29 01:38:29,2026-06-18 03:34:51,23,active,2026-06-23 12:00:00
+18,Memory Runbook 18: Connection pool sizing,sops/memory/runbook-18.md,memory,307,0.8953,0.9871,87,47,260,0.1531,2026-04-23 05:45:58,2026-06-06 05:10:28,25,stale,2026-06-23 12:00:00
+19,Memory Runbook 19: CoreDNS restart,sops/memory/runbook-19.md,memory,459,0.7703,0.9193,50,184,275,0.4009,2026-04-30 03:29:40,2026-06-21 05:57:47,6,active,2026-06-23 12:00:00
+20,Availability Runbook 20: CoreDNS restart,sops/availability/runbook-20.md,availability,541,0.6498,0.9007,510,426,115,0.7874,2026-05-07 19:19:58,2026-05-26 18:24:54,8,active,2026-06-23 12:00:00
+21,Memory Runbook 21: PDB & graceful shutdown,sops/memory/runbook-21.md,memory,138,0.6066,0.9457,102,0,138,0.0,2026-05-08 19:52:15,2026-06-12 10:11:52,9,active,2026-06-23 12:00:00
+22,Security Runbook 22: Cert rotation,sops/security/runbook-22.md,security,7,0.6232,0.9461,3,2,5,0.2857,2026-04-26 20:50:40,2026-06-07 02:27:10,23,stale,2026-06-23 12:00:00
+23,Security Runbook 23: OOMKilled remediation,sops/security/runbook-23.md,security,556,0.8812,0.933,546,411,145,0.7392,2026-05-01 18:41:36,2026-06-06 06:54:30,24,active,2026-06-23 12:00:00
+24,Node Runbook 24: Cert rotation,sops/node/runbook-24.md,node,122,0.8628,0.9018,53,44,78,0.3607,2026-04-29 12:24:47,2026-06-12 14:36:28,15,active,2026-06-23 12:00:00
+25,Network Runbook 25: PDB & graceful shutdown,sops/network/runbook-25.md,network,547,0.8141,0.9711,531,367,180,0.6709,2026-04-24 12:54:56,2026-06-11 06:17:23,38,active,2026-06-23 12:00:00
+26,Memory Runbook 26: Node drain & cordon,sops/memory/runbook-26.md,memory,67,0.6606,0.9228,20,33,34,0.4925,2026-05-14 10:27:39,2026-06-20 09:05:08,7,active,2026-06-23 12:00:00
+27,Storage Runbook 27: CoreDNS restart,sops/storage/runbook-27.md,storage,643,0.8639,0.9108,286,551,92,0.8569,2026-04-25 14:53:56,2026-06-01 17:43:47,22,stale,2026-06-23 12:00:00
+28,Storage Runbook 28: Connection pool sizing,sops/storage/runbook-28.md,storage,511,0.8735,0.9688,182,275,236,0.5382,2026-05-11 21:26:52,2026-05-25 02:29:44,3,active,2026-06-23 12:00:00
+29,Node Runbook 29: Connection pool sizing,sops/node/runbook-29.md,node,510,0.6565,0.9719,429,68,442,0.1333,2026-04-19 04:09:03,2026-06-17 23:19:17,8,active,2026-06-23 12:00:00
+30,Security Runbook 30: OOMKilled remediation,sops/security/runbook-30.md,security,751,0.8123,0.9465,613,707,44,0.9414,2026-05-05 15:22:51,2026-06-21 02:19:03,10,stale,2026-06-23 12:00:00
+31,Cpu Runbook 31: DiskPressure eviction recovery,sops/cpu/runbook-31.md,cpu,137,0.7539,0.9325,75,48,89,0.3504,2026-04-20 06:19:00,2026-06-14 07:14:06,38,stale,2026-06-23 12:00:00
+32,Storage Runbook 32: CFS throttling tuning,sops/storage/runbook-32.md,storage,469,0.7333,0.9524,463,454,15,0.968,2026-05-06 00:25:23,2026-06-06 02:52:39,3,stale,2026-06-23 12:00:00
+33,Availability Runbook 33: Connection pool sizing,sops/availability/runbook-33.md,availability,152,0.7175,0.9066,121,142,10,0.9342,2026-04-27 11:49:16,2026-06-06 08:02:02,9,active,2026-06-23 12:00:00
+34,Node Runbook 34: Connection pool sizing,sops/node/runbook-34.md,node,67,0.6037,0.9581,24,22,45,0.3284,2026-05-11 19:47:20,2026-06-22 05:33:05,27,active,2026-06-23 12:00:00
+35,Memory Runbook 35: OOMKilled remediation,sops/memory/runbook-35.md,memory,252,0.8274,0.9242,45,242,10,0.9603,2026-04-24 07:05:21,2026-06-13 07:06:12,35,stale,2026-06-23 12:00:00
+36,Node Runbook 36: Readiness probe tuning,sops/node/runbook-36.md,node,702,0.6105,0.9516,252,358,344,0.51,2026-05-04 18:42:35,2026-06-11 16:43:07,18,active,2026-06-23 12:00:00
+37,Security Runbook 37: Node drain & cordon,sops/security/runbook-37.md,security,431,0.7381,0.9244,100,252,179,0.5847,2026-05-07 18:14:42,2026-06-17 13:44:48,1,stale,2026-06-23 12:00:00
+38,Node Runbook 38: CFS throttling tuning,sops/node/runbook-38.md,node,182,0.6278,0.9507,150,132,50,0.7253,2026-05-04 08:19:07,2026-06-16 10:06:38,14,active,2026-06-23 12:00:00
+39,Availability Runbook 39: Cert rotation,sops/availability/runbook-39.md,availability,689,0.8641,0.9745,485,452,237,0.656,2026-05-09 22:14:56,2026-06-12 06:15:06,23,stale,2026-06-23 12:00:00
+40,Memory Runbook 40: Cert rotation,sops/memory/runbook-40.md,memory,382,0.6364,0.9097,144,54,328,0.1414,2026-05-24 03:29:13,2026-06-15 18:41:56,34,stale,2026-06-23 12:00:00

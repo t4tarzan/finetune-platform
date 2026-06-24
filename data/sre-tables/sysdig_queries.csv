@@ -1,0 +1,31 @@
+id,name,query_text,priority,interval_seconds,ml_use_cases,description,created_at
+1,mem_working_set,container_memory_working_set_bytes,P1,30,"[1,2,10]",Sysdig query for mem_working_set,2026-05-24 12:00:00
+2,cpu_usage,rate(container_cpu_usage_seconds_total[5m]),P2,30,[3],Sysdig query for cpu_usage,2026-05-24 12:00:00
+3,restart_total,kube_pod_container_status_restarts_total,P1,60,[4],Sysdig query for restart_total,2026-05-24 12:00:00
+4,http_5xx,"rate(http_requests_total{code=~""5..""}[5m])",P2,30,[13],Sysdig query for http_5xx,2026-05-24 12:00:00
+5,net_latency,"histogram_quantile(0.99, http_request_duration_ms)",P2,30,[7],Sysdig query for net_latency,2026-05-24 12:00:00
+6,fs_usage,container_fs_usage_bytes,P2,60,[5],Sysdig query for fs_usage,2026-05-24 12:00:00
+7,node_ready,"kube_node_status_condition{condition=""Ready""}",P1,60,[6],Sysdig query for node_ready,2026-05-24 12:00:00
+8,gc_pause,go_gc_duration_seconds,P3,60,[10],Sysdig query for gc_pause,2026-05-24 12:00:00
+9,dns_latency,coredns_dns_request_duration_seconds,P2,30,[8],Sysdig query for dns_latency,2026-05-24 12:00:00
+10,tcp_conns,container_network_tcp_usage_total,P3,60,[12],Sysdig query for tcp_conns,2026-05-24 12:00:00
+11,mem_working_set_v2,container_memory_working_set_bytes,P1,30,"[1,2,10]",Sysdig query for mem_working_set,2026-05-24 12:00:00
+12,cpu_usage_v2,rate(container_cpu_usage_seconds_total[5m]),P2,30,[3],Sysdig query for cpu_usage,2026-05-24 12:00:00
+13,restart_total_v2,kube_pod_container_status_restarts_total,P1,60,[4],Sysdig query for restart_total,2026-05-24 12:00:00
+14,http_5xx_v2,"rate(http_requests_total{code=~""5..""}[5m])",P2,30,[13],Sysdig query for http_5xx,2026-05-24 12:00:00
+15,net_latency_v2,"histogram_quantile(0.99, http_request_duration_ms)",P2,30,[7],Sysdig query for net_latency,2026-05-24 12:00:00
+16,fs_usage_v2,container_fs_usage_bytes,P2,60,[5],Sysdig query for fs_usage,2026-05-24 12:00:00
+17,node_ready_v2,"kube_node_status_condition{condition=""Ready""}",P1,60,[6],Sysdig query for node_ready,2026-05-24 12:00:00
+18,gc_pause_v2,go_gc_duration_seconds,P3,60,[10],Sysdig query for gc_pause,2026-05-24 12:00:00
+19,dns_latency_v2,coredns_dns_request_duration_seconds,P2,30,[8],Sysdig query for dns_latency,2026-05-24 12:00:00
+20,tcp_conns_v2,container_network_tcp_usage_total,P3,60,[12],Sysdig query for tcp_conns,2026-05-24 12:00:00
+21,mem_working_set_v3,container_memory_working_set_bytes,P1,30,"[1,2,10]",Sysdig query for mem_working_set,2026-05-24 12:00:00
+22,cpu_usage_v3,rate(container_cpu_usage_seconds_total[5m]),P2,30,[3],Sysdig query for cpu_usage,2026-05-24 12:00:00
+23,restart_total_v3,kube_pod_container_status_restarts_total,P1,60,[4],Sysdig query for restart_total,2026-05-24 12:00:00
+24,http_5xx_v3,"rate(http_requests_total{code=~""5..""}[5m])",P2,30,[13],Sysdig query for http_5xx,2026-05-24 12:00:00
+25,net_latency_v3,"histogram_quantile(0.99, http_request_duration_ms)",P2,30,[7],Sysdig query for net_latency,2026-05-24 12:00:00
+26,fs_usage_v3,container_fs_usage_bytes,P2,60,[5],Sysdig query for fs_usage,2026-05-24 12:00:00
+27,node_ready_v3,"kube_node_status_condition{condition=""Ready""}",P1,60,[6],Sysdig query for node_ready,2026-05-24 12:00:00
+28,gc_pause_v3,go_gc_duration_seconds,P3,60,[10],Sysdig query for gc_pause,2026-05-24 12:00:00
+29,dns_latency_v3,coredns_dns_request_duration_seconds,P2,30,[8],Sysdig query for dns_latency,2026-05-24 12:00:00
+30,tcp_conns_v3,container_network_tcp_usage_total,P3,60,[12],Sysdig query for tcp_conns,2026-05-24 12:00:00

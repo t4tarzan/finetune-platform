@@ -1,0 +1,1149 @@
+id,prediction_id,use_case_id,namespace,pod_name,cluster_name,gbm_prob,risk_level,delivered,channel,suppressed,suppress_reason,alerted_at
+1,1,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.6416,medium,true,slack,false,,2026-06-23 02:57:34
+2,2,2,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.8988,critical,true,pagerduty,false,,2026-06-23 06:36:34
+3,3,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.8591,critical,true,slack,false,,2026-06-23 10:21:03
+4,4,2,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.8035,high,true,email,false,,2026-06-22 18:02:13
+5,5,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.8698,critical,true,teams,false,,2026-06-02 18:00:05
+6,6,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6245,medium,true,slack,false,,2026-06-22 04:36:30
+7,8,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.8279,high,true,pagerduty,false,,2026-06-21 13:02:37
+8,9,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.9543,critical,true,teams,false,,2026-06-19 07:09:59
+9,10,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.7038,high,true,slack,false,,2026-06-19 00:58:26
+10,11,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8548,critical,true,email,false,,2026-06-08 18:17:45
+11,13,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.9054,critical,true,pagerduty,false,,2026-06-22 23:12:10
+12,14,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.6982,high,false,teams,true,duplicate within suppression window,2026-06-18 23:52:39
+13,16,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.9618,critical,true,teams,false,,2026-06-21 11:36:31
+14,17,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.7666,high,true,email,false,,2026-06-20 03:28:50
+15,18,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.6712,high,true,teams,false,,2026-06-07 17:37:08
+16,19,2,identity,session-store-4732511-0dba8,prod-use2-eks,0.75,high,true,email,false,,2026-06-13 02:12:25
+17,20,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.9372,critical,true,email,false,,2026-06-15 20:35:41
+18,21,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.6947,high,true,teams,false,,2026-06-22 17:53:20
+19,22,13,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.8096,high,true,teams,false,,2026-06-22 18:49:20
+20,23,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.7551,high,false,pagerduty,true,duplicate within suppression window,2026-06-12 05:55:39
+21,24,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.7039,high,false,teams,true,duplicate within suppression window,2026-06-20 08:45:02
+22,25,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.8115,high,true,teams,false,,2026-06-15 02:08:13
+23,26,5,search,search-api-8352074-5b766,prod-usw2-eks,0.8871,critical,true,pagerduty,false,,2026-06-18 13:22:56
+24,27,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.8361,high,true,pagerduty,false,,2026-06-20 09:01:03
+25,29,1,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.9089,critical,true,slack,false,,2026-06-18 09:03:15
+26,30,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.6772,high,true,email,false,,2026-06-20 14:05:11
+27,31,10,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.853,critical,false,pagerduty,true,duplicate within suppression window,2026-06-22 23:02:15
+28,32,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.9502,critical,true,email,false,,2026-06-17 12:43:58
+29,33,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.9379,critical,true,pagerduty,false,,2026-06-17 06:02:57
+30,35,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.9041,critical,true,teams,false,,2026-06-07 14:54:28
+31,37,1,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.6344,medium,true,slack,false,,2026-06-14 01:35:03
+32,38,5,search,search-api-8352074-5b766,prod-usw2-eks,0.6293,medium,true,teams,false,,2026-06-21 05:38:53
+33,40,7,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8881,critical,true,teams,false,,2026-06-20 02:52:46
+34,42,5,search,search-api-be84964-d972c,dr-use1-eks,0.7922,high,true,teams,false,,2026-06-06 09:37:24
+35,43,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.8077,high,true,teams,false,,2026-06-19 10:59:10
+36,44,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.6932,high,true,email,false,,2026-06-21 13:04:39
+37,45,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.9401,critical,true,teams,false,,2026-06-18 06:52:08
+38,46,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.8737,critical,false,teams,true,duplicate within suppression window,2026-06-11 15:24:55
+39,47,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.7866,high,true,teams,false,,2026-06-19 18:21:14
+40,49,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.6861,high,true,teams,false,,2026-06-22 19:55:12
+41,50,5,search,search-api-be84964-d972c,dr-use1-eks,0.6406,medium,true,email,false,,2026-06-13 16:55:10
+42,51,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.6549,high,true,teams,false,,2026-05-29 10:21:04
+43,52,10,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.7447,high,true,slack,false,,2026-06-06 21:13:14
+44,53,5,search,search-api-8352074-5b766,prod-usw2-eks,0.7603,high,true,teams,false,,2026-06-21 12:16:15
+45,55,2,notifications,notifications-b036879-82982,dr-use1-eks,0.6397,medium,false,teams,true,duplicate within suppression window,2026-06-23 03:56:43
+46,57,10,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.699,high,false,slack,true,duplicate within suppression window,2026-06-23 05:55:41
+47,58,5,payments,payments-api-2729261-453da,staging-use2-eks,0.6637,high,true,teams,false,,2026-06-19 02:17:41
+48,59,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.618,medium,true,teams,false,,2026-06-16 16:33:00
+49,62,13,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.7527,high,true,teams,false,,2026-06-05 08:26:00
+50,63,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6274,medium,false,slack,true,duplicate within suppression window,2026-06-18 21:26:51
+51,64,5,payments,payments-api-2729261-453da,staging-use2-eks,0.9453,critical,true,teams,false,,2026-06-02 06:25:03
+52,65,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.7797,high,true,teams,false,,2026-06-22 12:43:19
+53,66,3,platform,config-svc-027a395-39a4d,prod-use2-eks,0.9399,critical,true,teams,false,,2026-06-19 07:42:41
+54,67,5,search,search-api-8352074-5b766,prod-usw2-eks,0.8162,high,true,pagerduty,false,,2026-06-21 14:10:05
+55,68,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.9185,critical,true,pagerduty,false,,2026-06-19 04:35:10
+56,69,4,orders,orders-api-cbca488-26609,prod-usw2-eks,0.8416,high,true,pagerduty,false,,2026-06-18 17:39:24
+57,70,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.8419,high,true,pagerduty,false,,2026-06-21 03:39:21
+58,71,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.8846,critical,true,pagerduty,false,,2026-06-15 21:42:43
+59,72,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.7361,high,false,email,true,duplicate within suppression window,2026-06-22 21:11:41
+60,73,1,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.6515,high,true,slack,false,,2026-06-10 19:49:08
+61,74,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.7518,high,true,email,false,,2026-06-20 20:07:49
+62,75,5,search,search-api-8352074-5b766,prod-usw2-eks,0.8226,high,false,email,true,duplicate within suppression window,2026-06-16 02:52:33
+63,76,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.6635,high,true,teams,false,,2026-06-09 09:57:07
+64,77,1,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7712,high,true,teams,false,,2026-06-17 23:19:36
+65,78,1,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.6177,medium,true,teams,false,,2026-06-09 16:35:24
+66,79,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.6773,high,true,email,false,,2026-06-12 09:52:59
+67,80,2,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.6479,medium,true,pagerduty,false,,2026-06-15 21:37:05
+68,81,1,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.9314,critical,true,email,false,,2026-06-23 00:52:10
+69,82,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8951,critical,false,email,true,duplicate within suppression window,2026-06-18 16:17:25
+70,84,13,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.7043,high,true,teams,false,,2026-06-16 19:16:05
+71,85,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.879,critical,true,slack,false,,2026-06-14 11:01:00
+72,87,7,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8138,high,true,pagerduty,false,,2026-06-20 03:32:09
+73,88,5,payments,payments-api-2729261-453da,staging-use2-eks,0.8773,critical,false,pagerduty,true,duplicate within suppression window,2026-05-31 03:57:25
+74,89,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.9033,critical,true,pagerduty,false,,2026-06-22 18:03:45
+75,90,1,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.9255,critical,true,email,false,,2026-06-17 12:10:24
+76,91,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.7573,high,true,slack,false,,2026-06-22 07:52:12
+77,92,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.632,medium,true,pagerduty,false,,2026-05-31 05:14:27
+78,93,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.6479,medium,true,slack,false,,2026-06-22 21:52:48
+79,95,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.9162,critical,true,slack,false,,2026-06-22 19:52:43
+80,96,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.8809,critical,true,teams,false,,2026-06-18 16:21:40
+81,97,10,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.7444,high,true,email,false,,2026-06-09 22:51:02
+82,98,10,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.685,high,true,pagerduty,false,,2026-06-01 19:46:38
+83,99,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.8391,high,true,pagerduty,false,,2026-06-10 09:12:31
+84,100,4,orders,orders-api-cbca488-26609,prod-usw2-eks,0.7379,high,true,email,false,,2026-06-20 13:58:47
+85,101,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.6273,medium,true,teams,false,,2026-06-06 13:46:12
+86,102,2,notifications,notifications-b036879-82982,dr-use1-eks,0.9011,critical,true,slack,false,,2026-06-22 11:50:27
+87,103,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.8425,high,true,teams,false,,2026-06-18 18:46:21
+88,104,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.7442,high,true,pagerduty,false,,2026-06-21 11:58:23
+89,105,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.8618,critical,true,pagerduty,false,,2026-06-21 16:52:54
+90,107,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8729,critical,true,pagerduty,false,,2026-05-29 08:12:59
+91,108,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.7984,high,true,teams,false,,2026-06-18 03:32:03
+92,109,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.6586,high,true,teams,false,,2026-06-08 19:36:44
+93,110,13,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.687,high,false,pagerduty,true,duplicate within suppression window,2026-06-23 09:59:38
+94,111,7,search,search-api-1605640-8abaf,staging-use2-eks,0.916,critical,true,pagerduty,false,,2026-06-23 01:03:12
+95,113,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.6904,high,true,slack,false,,2026-06-06 01:42:59
+96,114,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.6358,medium,true,email,false,,2026-06-07 19:53:54
+97,115,2,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.6571,high,true,teams,false,,2026-06-15 14:57:30
+98,118,10,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.6802,high,true,pagerduty,false,,2026-06-23 03:15:04
+99,119,2,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.9629,critical,true,pagerduty,false,,2026-06-17 02:41:42
+100,121,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.6575,high,true,teams,false,,2026-06-22 19:12:39
+101,122,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.9467,critical,true,teams,false,,2026-06-21 23:55:08
+102,123,5,search,search-api-8352074-5b766,prod-usw2-eks,0.7427,high,true,teams,false,,2026-06-19 17:33:29
+103,125,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.9461,critical,true,slack,false,,2026-06-18 09:01:06
+104,126,7,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.9361,critical,true,teams,false,,2026-06-05 11:57:53
+105,127,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.7749,high,true,teams,false,,2026-06-14 12:21:24
+106,128,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.9454,critical,true,slack,false,,2026-06-06 09:24:33
+107,129,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.854,critical,true,teams,false,,2026-06-08 17:16:43
+108,130,1,notifications,notifications-b036879-82982,dr-use1-eks,0.7173,high,true,teams,false,,2026-06-22 21:59:14
+109,131,3,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.8827,critical,true,teams,false,,2026-06-19 07:18:00
+110,132,13,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.7334,high,false,teams,true,duplicate within suppression window,2026-06-12 09:03:40
+111,133,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.6038,medium,true,pagerduty,false,,2026-06-19 19:18:40
+112,134,6,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.7434,high,true,teams,false,,2026-06-14 15:35:49
+113,135,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.7356,high,false,slack,true,duplicate within suppression window,2026-06-13 22:37:07
+114,136,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8752,critical,true,email,false,,2026-06-20 06:26:12
+115,138,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.7598,high,true,teams,false,,2026-06-22 10:58:47
+116,139,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.8978,critical,true,teams,false,,2026-06-18 14:24:22
+117,140,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.7243,high,true,teams,false,,2026-06-23 04:42:57
+118,141,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.7652,high,true,pagerduty,false,,2026-06-22 15:30:23
+119,142,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.9428,critical,true,slack,false,,2026-05-29 22:07:49
+120,144,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.6227,medium,true,pagerduty,false,,2026-06-18 03:26:37
+121,146,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.7288,high,true,slack,false,,2026-06-23 06:36:16
+122,147,6,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.7565,high,true,email,false,,2026-06-15 14:14:44
+123,148,5,search,search-api-8352074-5b766,prod-usw2-eks,0.7472,high,true,teams,false,,2026-06-13 01:23:12
+124,149,2,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.624,medium,true,pagerduty,false,,2026-06-16 02:48:31
+125,150,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.9176,critical,true,teams,false,,2026-06-22 23:44:15
+126,151,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.9142,critical,true,slack,false,,2026-06-06 03:08:54
+127,152,7,identity,session-store-a097c68-649a1,staging-use2-eks,0.7221,high,true,teams,false,,2026-06-22 06:32:59
+128,153,1,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.8666,critical,true,slack,false,,2026-06-23 04:19:48
+129,154,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.6993,high,true,teams,false,,2026-06-14 07:16:30
+130,155,13,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.8892,critical,true,teams,false,,2026-06-21 15:48:30
+131,156,5,search,search-api-be84964-d972c,dr-use1-eks,0.6263,medium,false,pagerduty,true,duplicate within suppression window,2026-06-12 11:28:35
+132,157,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.9322,critical,true,teams,false,,2026-06-19 08:03:42
+133,159,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.6274,medium,false,email,true,duplicate within suppression window,2026-06-23 08:34:50
+134,160,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.827,high,true,slack,false,,2026-05-30 15:04:27
+135,161,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.835,high,true,slack,false,,2026-06-14 00:36:33
+136,162,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.6674,high,false,email,true,duplicate within suppression window,2026-06-01 01:43:17
+137,163,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.9175,critical,true,email,false,,2026-06-18 14:21:47
+138,164,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6376,medium,true,teams,false,,2026-06-22 01:07:54
+139,165,8,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.6077,medium,false,pagerduty,true,duplicate within suppression window,2026-06-21 22:50:02
+140,166,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.8399,high,true,teams,false,,2026-06-23 05:18:36
+141,167,2,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.809,high,true,email,false,,2026-06-17 14:52:40
+142,168,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.8528,critical,false,teams,true,duplicate within suppression window,2026-06-15 18:34:25
+143,170,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8561,critical,true,pagerduty,false,,2026-05-30 18:14:59
+144,172,10,identity,session-store-4732511-0dba8,prod-use2-eks,0.9639,critical,true,teams,false,,2026-06-16 09:40:42
+145,173,2,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.7277,high,true,teams,false,,2026-06-14 16:44:10
+146,174,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.8451,high,true,slack,false,,2026-06-17 16:47:00
+147,175,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.7766,high,true,teams,false,,2026-06-12 16:59:50
+148,176,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.9098,critical,true,email,false,,2026-06-20 13:15:06
+149,177,10,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.704,high,true,teams,false,,2026-06-22 15:28:29
+150,178,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.8713,critical,true,slack,false,,2026-06-20 10:17:02
+151,179,4,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.9144,critical,true,slack,false,,2026-06-14 06:11:11
+152,181,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.7163,high,true,teams,false,,2026-06-14 08:56:57
+153,182,2,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.953,critical,true,email,false,,2026-06-07 15:59:55
+154,183,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.9093,critical,true,slack,false,,2026-06-23 07:07:10
+155,184,10,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8674,critical,true,slack,false,,2026-06-04 16:45:47
+156,185,7,platform,image-resizer-9994630-7c707,prod-use2-eks,0.9278,critical,true,email,false,,2026-06-23 04:41:50
+157,186,2,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.8476,high,true,teams,false,,2026-06-07 14:41:37
+158,187,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7445,high,true,teams,false,,2026-06-14 12:08:31
+159,188,1,notifications,notifications-b036879-82982,dr-use1-eks,0.6642,high,false,teams,true,duplicate within suppression window,2026-06-23 11:27:47
+160,191,8,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.9233,critical,true,email,false,,2026-06-19 01:05:52
+161,192,13,search,search-api-1605640-8abaf,staging-use2-eks,0.7551,high,true,pagerduty,false,,2026-06-22 08:54:14
+162,194,1,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.8265,high,false,teams,true,duplicate within suppression window,2026-06-15 10:29:39
+163,195,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.8152,high,true,teams,false,,2026-06-15 23:42:14
+164,197,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.9186,critical,true,email,false,,2026-06-20 11:25:51
+165,198,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8647,critical,true,slack,false,,2026-06-23 00:04:50
+166,199,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.9216,critical,true,slack,false,,2026-06-16 18:56:09
+167,200,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.8159,high,true,teams,false,,2026-06-23 08:21:59
+168,201,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.8034,high,false,teams,true,duplicate within suppression window,2026-06-06 20:11:12
+169,202,2,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.9147,critical,true,teams,false,,2026-06-23 06:16:15
+170,203,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.8866,critical,true,teams,false,,2026-06-18 02:40:24
+171,204,5,search,search-api-8352074-5b766,prod-usw2-eks,0.7746,high,true,teams,false,,2026-06-13 09:26:44
+172,205,10,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.9296,critical,true,pagerduty,false,,2026-06-23 11:51:13
+173,206,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.7981,high,true,teams,false,,2026-06-20 06:41:54
+174,207,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.6505,high,true,teams,false,,2026-06-11 20:14:31
+175,208,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.7059,high,true,teams,false,,2026-06-22 00:17:33
+176,209,13,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.6655,high,true,email,false,,2026-06-18 02:02:53
+177,210,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7249,high,false,teams,true,duplicate within suppression window,2026-06-16 06:38:14
+178,212,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.7842,high,true,email,false,,2026-06-19 01:46:49
+179,213,10,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.7256,high,true,teams,false,,2026-06-23 11:30:05
+180,215,13,search,search-api-1605640-8abaf,staging-use2-eks,0.8364,high,false,pagerduty,true,duplicate within suppression window,2026-06-23 04:25:55
+181,216,3,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.9079,critical,true,email,false,,2026-06-22 02:06:01
+182,218,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8965,critical,true,slack,false,,2026-06-21 19:54:41
+183,219,7,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.9201,critical,true,pagerduty,false,,2026-06-09 22:36:51
+184,221,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.878,critical,false,email,true,duplicate within suppression window,2026-06-22 16:18:24
+185,222,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.9386,critical,true,pagerduty,false,,2026-06-03 18:50:22
+186,223,7,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.6484,medium,false,pagerduty,true,duplicate within suppression window,2026-06-11 07:10:13
+187,224,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.7405,high,false,slack,true,duplicate within suppression window,2026-06-23 04:10:12
+188,225,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.6924,high,true,teams,false,,2026-06-20 14:53:45
+189,227,10,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.6471,medium,false,slack,true,duplicate within suppression window,2026-06-19 04:47:18
+190,228,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.8529,critical,true,teams,false,,2026-06-18 18:42:52
+191,229,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.6934,high,true,slack,false,,2026-06-18 09:40:47
+192,230,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.7024,high,true,teams,false,,2026-06-05 20:53:49
+193,232,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.7136,high,true,pagerduty,false,,2026-06-14 12:17:52
+194,233,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.8654,critical,true,pagerduty,false,,2026-06-20 09:29:56
+195,234,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7175,high,true,slack,false,,2026-06-10 09:20:40
+196,235,10,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.8756,critical,true,email,false,,2026-06-12 04:18:28
+197,236,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.813,high,true,pagerduty,false,,2026-06-09 02:02:26
+198,237,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.71,high,true,teams,false,,2026-06-15 23:49:03
+199,238,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.6059,medium,false,email,true,duplicate within suppression window,2026-06-07 07:13:32
+200,239,2,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.9446,critical,true,pagerduty,false,,2026-06-06 10:54:12
+201,240,2,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.6412,medium,true,pagerduty,false,,2026-06-22 18:40:44
+202,242,13,search,search-api-1605640-8abaf,staging-use2-eks,0.8637,critical,false,slack,true,duplicate within suppression window,2026-06-22 17:18:31
+203,244,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.9032,critical,true,teams,false,,2026-06-14 07:20:35
+204,245,3,platform,config-svc-027a395-39a4d,prod-use2-eks,0.8146,high,true,slack,false,,2026-06-20 10:53:29
+205,246,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.8477,high,true,slack,false,,2026-06-13 09:48:05
+206,247,7,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.9071,critical,false,slack,true,duplicate within suppression window,2026-06-16 13:49:54
+207,248,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.8554,critical,false,teams,true,duplicate within suppression window,2026-06-01 20:13:02
+208,249,2,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.7618,high,true,pagerduty,false,,2026-06-15 00:53:13
+209,252,1,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.6441,medium,true,teams,false,,2026-06-19 02:39:33
+210,253,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.8478,high,true,teams,false,,2026-06-13 11:07:06
+211,254,10,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.7267,high,true,email,false,,2026-06-23 07:28:57
+212,255,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.6186,medium,true,teams,false,,2026-06-23 06:25:48
+213,256,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.8395,high,true,teams,false,,2026-06-13 00:08:11
+214,257,2,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.6112,medium,true,pagerduty,false,,2026-06-22 18:31:01
+215,258,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.9177,critical,true,teams,false,,2026-06-22 07:52:46
+216,259,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.7158,high,true,teams,false,,2026-06-17 04:44:58
+217,260,10,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.6012,medium,true,pagerduty,false,,2026-06-23 08:10:55
+218,261,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.657,high,true,teams,false,,2026-06-22 02:41:22
+219,263,1,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.9163,critical,true,teams,false,,2026-06-22 00:27:26
+220,264,13,platform,image-resizer-9994630-7c707,prod-use2-eks,0.8192,high,true,teams,false,,2026-06-20 17:18:10
+221,265,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.803,high,true,pagerduty,false,,2026-06-22 23:18:49
+222,266,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.6747,high,true,teams,false,,2026-06-13 22:55:15
+223,267,1,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.7937,high,false,pagerduty,true,duplicate within suppression window,2026-06-20 14:39:14
+224,268,8,search,search-api-1605640-8abaf,staging-use2-eks,0.932,critical,true,slack,false,,2026-06-23 01:15:29
+225,270,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.7287,high,true,slack,false,,2026-06-17 05:59:40
+226,271,6,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.9004,critical,true,teams,false,,2026-06-15 04:45:17
+227,274,1,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.6022,medium,true,pagerduty,false,,2026-06-16 18:57:53
+228,275,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.6809,high,true,slack,false,,2026-06-18 20:55:39
+229,277,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.7949,high,true,teams,false,,2026-06-13 07:23:28
+230,278,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.833,high,true,email,false,,2026-06-19 19:27:12
+231,279,8,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.8368,high,true,teams,false,,2026-06-20 15:46:58
+232,280,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.806,high,true,teams,false,,2026-06-23 08:35:13
+233,281,10,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.9662,critical,true,teams,false,,2026-06-21 09:13:05
+234,282,3,platform,config-svc-027a395-39a4d,prod-use2-eks,0.7753,high,true,teams,false,,2026-06-20 21:51:05
+235,283,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.6079,medium,true,teams,false,,2026-06-20 05:38:24
+236,284,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.9545,critical,true,pagerduty,false,,2026-06-22 13:03:39
+237,285,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.6724,high,true,teams,false,,2026-06-13 19:39:32
+238,288,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.896,critical,true,teams,false,,2026-06-05 08:41:16
+239,289,13,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.933,critical,false,pagerduty,true,duplicate within suppression window,2026-06-22 14:47:34
+240,291,1,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7563,high,true,email,false,,2026-06-15 16:10:53
+241,292,1,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.9271,critical,true,teams,false,,2026-06-23 07:29:51
+242,293,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.697,high,true,email,false,,2026-06-20 08:45:00
+243,295,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.9492,critical,true,email,false,,2026-06-15 00:36:02
+244,296,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.8726,critical,true,teams,false,,2026-06-22 09:45:32
+245,298,1,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.7705,high,true,teams,false,,2026-06-13 05:43:33
+246,301,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.811,high,false,email,true,duplicate within suppression window,2026-06-15 03:49:10
+247,305,1,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.9586,critical,true,pagerduty,false,,2026-06-22 20:19:13
+248,307,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.8382,high,true,teams,false,,2026-06-16 15:46:57
+249,308,5,search,search-api-8352074-5b766,prod-usw2-eks,0.9071,critical,true,teams,false,,2026-06-13 06:06:46
+250,310,8,search,search-api-1605640-8abaf,staging-use2-eks,0.6091,medium,true,teams,false,,2026-06-22 20:32:31
+251,311,8,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.9063,critical,true,pagerduty,false,,2026-06-20 06:44:50
+252,312,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.785,high,false,slack,true,duplicate within suppression window,2026-06-20 11:02:35
+253,313,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.9132,critical,true,teams,false,,2026-06-18 23:20:07
+254,314,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.6006,medium,true,email,false,,2026-06-23 03:27:30
+255,315,7,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.8097,high,true,email,false,,2026-06-22 09:53:05
+256,316,4,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.6094,medium,false,teams,true,duplicate within suppression window,2026-06-15 23:27:02
+257,317,1,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.8851,critical,false,teams,true,duplicate within suppression window,2026-06-10 08:21:44
+258,318,5,search,search-api-8352074-5b766,prod-usw2-eks,0.6239,medium,true,teams,false,,2026-06-20 17:56:54
+259,319,5,search,search-api-be84964-d972c,dr-use1-eks,0.6922,high,true,teams,false,,2026-06-21 21:30:52
+260,320,1,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.7823,high,true,email,false,,2026-06-19 01:50:18
+261,321,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8281,high,true,email,false,,2026-06-12 15:39:12
+262,322,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.6652,high,true,slack,false,,2026-06-19 13:03:37
+263,326,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8618,critical,true,teams,false,,2026-06-14 18:43:38
+264,327,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.9476,critical,false,email,true,duplicate within suppression window,2026-05-30 08:52:21
+265,328,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.8802,critical,true,teams,false,,2026-06-07 16:50:36
+266,329,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.6779,high,true,email,false,,2026-06-22 16:06:27
+267,330,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8616,critical,true,pagerduty,false,,2026-06-18 06:10:01
+268,332,1,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.7184,high,false,email,true,duplicate within suppression window,2026-06-23 10:38:21
+269,334,8,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8253,high,true,email,false,,2026-06-20 09:05:40
+270,337,7,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.6209,medium,true,teams,false,,2026-06-22 10:25:17
+271,338,4,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.7954,high,true,slack,false,,2026-06-17 08:40:17
+272,339,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.7372,high,true,teams,false,,2026-06-22 00:50:30
+273,340,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.8087,high,true,pagerduty,false,,2026-06-21 19:36:04
+274,343,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.8996,critical,false,pagerduty,true,duplicate within suppression window,2026-06-06 02:20:35
+275,344,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.7916,high,true,teams,false,,2026-06-20 17:32:23
+276,345,7,search,search-api-1605640-8abaf,staging-use2-eks,0.7149,high,true,slack,false,,2026-06-23 00:22:35
+277,346,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.8532,critical,true,email,false,,2026-06-21 07:26:07
+278,347,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.6732,high,true,teams,false,,2026-06-19 04:26:15
+279,348,10,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.6254,medium,true,teams,false,,2026-06-22 14:49:49
+280,349,2,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.8707,critical,true,slack,false,,2026-06-16 06:24:57
+281,351,7,search,search-api-1605640-8abaf,staging-use2-eks,0.9168,critical,true,teams,false,,2026-06-23 09:41:36
+282,352,7,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.8072,high,true,teams,false,,2026-06-13 13:51:30
+283,353,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.712,high,true,pagerduty,false,,2026-06-19 02:17:20
+284,355,4,notifications,notifications-b036879-82982,dr-use1-eks,0.9472,critical,true,email,false,,2026-06-23 04:41:40
+285,356,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.751,high,false,pagerduty,true,duplicate within suppression window,2026-06-18 07:51:30
+286,357,2,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.8723,critical,true,teams,false,,2026-06-23 11:06:06
+287,359,10,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.7395,high,true,teams,false,,2026-06-22 17:12:34
+288,360,1,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.9607,critical,true,email,false,,2026-06-07 04:21:35
+289,361,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.7665,high,true,teams,false,,2026-06-22 10:09:09
+290,362,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.9555,critical,true,teams,false,,2026-06-22 20:02:18
+291,363,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.677,high,true,slack,false,,2026-06-23 02:34:23
+292,364,5,payments,payments-api-2729261-453da,staging-use2-eks,0.6996,high,false,teams,true,duplicate within suppression window,2026-06-20 01:23:28
+293,366,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.7015,high,true,teams,false,,2026-06-23 08:13:35
+294,367,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8176,high,true,email,false,,2026-06-19 06:50:47
+295,369,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.7186,high,true,email,false,,2026-06-15 03:41:46
+296,370,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.6809,high,true,slack,false,,2026-06-03 02:06:51
+297,372,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.9687,critical,true,slack,false,,2026-06-02 04:46:45
+298,373,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.7025,high,true,email,false,,2026-06-21 09:29:06
+299,376,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.6595,high,true,teams,false,,2026-06-11 19:26:53
+300,377,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.7619,high,true,teams,false,,2026-06-20 23:35:56
+301,378,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.9409,critical,false,slack,true,duplicate within suppression window,2026-06-11 07:49:03
+302,379,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.7587,high,false,email,true,duplicate within suppression window,2026-06-22 19:26:02
+303,381,1,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.7587,high,true,email,false,,2026-06-21 02:45:37
+304,382,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.9229,critical,true,slack,false,,2026-06-17 09:22:23
+305,383,13,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.9678,critical,false,teams,true,duplicate within suppression window,2026-06-22 06:21:05
+306,385,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.753,high,true,teams,false,,2026-06-11 06:16:05
+307,386,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.6505,high,false,email,true,duplicate within suppression window,2026-06-21 20:34:09
+308,387,2,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.9432,critical,true,pagerduty,false,,2026-06-06 04:10:11
+309,388,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.9218,critical,true,teams,false,,2026-06-20 23:21:49
+310,389,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.8142,high,true,slack,false,,2026-06-10 15:56:44
+311,390,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.6627,high,true,slack,false,,2026-06-09 02:23:08
+312,391,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.7951,high,true,email,false,,2026-06-22 19:37:59
+313,392,7,search,search-api-1605640-8abaf,staging-use2-eks,0.9454,critical,false,slack,true,duplicate within suppression window,2026-06-23 05:40:32
+314,395,2,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.9388,critical,false,teams,true,duplicate within suppression window,2026-06-13 14:48:06
+315,396,1,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.6449,medium,false,teams,true,duplicate within suppression window,2026-06-20 12:54:21
+316,397,1,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.6612,high,true,slack,false,,2026-06-19 00:58:14
+317,398,1,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.6441,medium,true,slack,false,,2026-06-15 20:14:23
+318,400,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.7789,high,true,pagerduty,false,,2026-06-22 14:50:42
+319,401,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.7269,high,true,email,false,,2026-06-17 20:49:48
+320,403,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.681,high,false,teams,true,duplicate within suppression window,2026-06-06 17:50:02
+321,404,2,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.9607,critical,true,teams,false,,2026-06-17 13:33:06
+322,407,1,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.6102,medium,true,pagerduty,false,,2026-06-23 01:34:12
+323,408,7,platform,image-resizer-9994630-7c707,prod-use2-eks,0.8951,critical,true,teams,false,,2026-06-22 22:58:26
+324,412,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.9252,critical,true,pagerduty,false,,2026-06-20 12:57:14
+325,414,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.8237,high,true,pagerduty,false,,2026-06-13 06:08:27
+326,415,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.6313,medium,false,teams,true,duplicate within suppression window,2026-06-14 17:11:18
+327,416,1,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.8843,critical,false,slack,true,duplicate within suppression window,2026-06-01 13:18:55
+328,417,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.6347,medium,true,email,false,,2026-06-18 19:39:47
+329,418,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.8723,critical,true,teams,false,,2026-06-17 17:10:06
+330,419,8,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.8003,high,true,teams,false,,2026-06-14 14:32:15
+331,420,2,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.7715,high,true,teams,false,,2026-06-20 11:03:07
+332,421,10,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.6156,medium,true,pagerduty,false,,2026-06-19 22:30:08
+333,422,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.7488,high,true,teams,false,,2026-06-17 22:51:55
+334,424,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.6137,medium,true,teams,false,,2026-06-11 18:50:06
+335,425,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.954,critical,false,email,true,duplicate within suppression window,2026-06-22 22:05:56
+336,426,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.6905,high,true,email,false,,2026-06-22 17:24:41
+337,427,2,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.9546,critical,true,pagerduty,false,,2026-06-23 07:31:53
+338,428,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.7971,high,false,teams,true,duplicate within suppression window,2026-06-02 13:30:14
+339,429,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.7119,high,true,slack,false,,2026-06-17 01:07:03
+340,432,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.8192,high,true,pagerduty,false,,2026-06-14 16:26:06
+341,433,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.7471,high,true,pagerduty,false,,2026-06-15 15:16:42
+342,434,2,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8833,critical,true,slack,false,,2026-06-17 08:34:45
+343,435,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.7364,high,true,teams,false,,2026-06-11 16:44:05
+344,436,1,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8727,critical,true,email,false,,2026-06-20 12:39:15
+345,437,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.9339,critical,true,teams,false,,2026-06-21 16:34:00
+346,438,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.9173,critical,true,email,false,,2026-05-31 17:21:42
+347,440,1,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.8502,critical,true,teams,false,,2026-05-28 01:48:09
+348,441,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.9592,critical,true,teams,false,,2026-06-15 23:52:54
+349,442,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.7794,high,true,teams,false,,2026-06-22 20:03:47
+350,443,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.6075,medium,true,teams,false,,2026-06-13 22:05:12
+351,444,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.8255,high,true,email,false,,2026-06-22 14:14:34
+352,445,5,search,search-api-8352074-5b766,prod-usw2-eks,0.7415,high,true,pagerduty,false,,2026-06-13 01:36:15
+353,446,13,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.9122,critical,true,email,false,,2026-06-16 03:28:27
+354,447,5,payments,payments-api-2729261-453da,staging-use2-eks,0.9293,critical,true,pagerduty,false,,2026-05-31 17:12:28
+355,448,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.8102,high,true,teams,false,,2026-06-23 06:33:38
+356,449,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.7041,high,false,teams,true,duplicate within suppression window,2026-06-15 21:09:09
+357,450,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.8749,critical,true,teams,false,,2026-06-23 05:42:54
+358,452,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6506,high,true,pagerduty,false,,2026-06-21 18:10:40
+359,454,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.8707,critical,true,teams,false,,2026-06-06 05:58:46
+360,455,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.6829,high,true,slack,false,,2026-06-19 16:00:34
+361,456,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.7305,high,false,email,true,duplicate within suppression window,2026-06-23 11:17:41
+362,457,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.7072,high,true,teams,false,,2026-06-10 18:49:53
+363,458,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.8342,high,false,teams,true,duplicate within suppression window,2026-06-14 11:15:32
+364,459,1,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.6085,medium,false,teams,true,duplicate within suppression window,2026-06-01 01:38:39
+365,460,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.7621,high,true,slack,false,,2026-06-05 18:16:31
+366,461,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6378,medium,false,email,true,duplicate within suppression window,2026-06-17 22:09:30
+367,463,4,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.815,high,true,email,false,,2026-06-22 05:16:02
+368,465,5,payments,payments-api-2729261-453da,staging-use2-eks,0.8219,high,true,teams,false,,2026-06-01 19:01:41
+369,466,4,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.9526,critical,true,slack,false,,2026-06-14 23:50:44
+370,467,1,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.9019,critical,true,teams,false,,2026-06-19 11:17:19
+371,468,2,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.8489,high,true,teams,false,,2026-06-12 04:54:05
+372,469,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.9411,critical,true,slack,false,,2026-06-17 01:57:18
+373,470,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.8317,high,true,teams,false,,2026-06-08 04:21:48
+374,471,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.7899,high,true,email,false,,2026-06-21 15:15:37
+375,472,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.8417,high,true,teams,false,,2026-06-14 17:23:45
+376,473,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.6447,medium,true,teams,false,,2026-06-18 08:40:32
+377,475,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7973,high,true,slack,false,,2026-06-04 04:36:55
+378,476,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7964,high,false,teams,true,duplicate within suppression window,2026-06-07 17:04:16
+379,477,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.8403,high,true,slack,false,,2026-06-18 01:49:14
+380,478,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.8833,critical,true,teams,false,,2026-06-19 10:39:58
+381,479,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.9513,critical,true,teams,false,,2026-06-22 04:17:35
+382,480,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.6212,medium,true,pagerduty,false,,2026-06-16 01:02:58
+383,482,2,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.6754,high,true,slack,false,,2026-06-20 15:56:29
+384,483,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6283,medium,true,email,false,,2026-06-22 14:12:15
+385,484,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.7115,high,true,slack,false,,2026-06-19 20:16:50
+386,485,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.7074,high,true,teams,false,,2026-06-09 02:13:06
+387,486,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.861,critical,true,slack,false,,2026-06-17 00:10:15
+388,488,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.667,high,true,email,false,,2026-06-16 13:05:59
+389,489,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.9471,critical,true,email,false,,2026-06-17 02:38:22
+390,491,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.7756,high,false,pagerduty,true,duplicate within suppression window,2026-06-21 17:07:14
+391,492,1,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.777,high,true,email,false,,2026-05-31 12:39:42
+392,494,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.7633,high,true,slack,false,,2026-06-20 12:57:32
+393,495,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.6555,high,true,teams,false,,2026-06-23 01:13:42
+394,496,4,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.7542,high,true,teams,false,,2026-05-29 18:59:13
+395,497,3,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.7227,high,false,pagerduty,true,duplicate within suppression window,2026-06-20 04:29:31
+396,498,10,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.9319,critical,true,teams,false,,2026-06-22 18:21:05
+397,499,2,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8848,critical,true,slack,false,,2026-06-07 11:33:17
+398,500,4,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8708,critical,true,pagerduty,false,,2026-06-21 12:16:41
+399,501,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.9498,critical,true,teams,false,,2026-06-23 09:03:17
+400,502,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.6471,medium,true,teams,false,,2026-06-20 05:29:51
+401,504,13,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.6325,medium,true,teams,false,,2026-06-20 20:39:26
+402,505,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.6265,medium,true,teams,false,,2026-06-23 10:45:50
+403,507,1,identity,session-store-4732511-0dba8,prod-use2-eks,0.6848,high,true,pagerduty,false,,2026-06-22 07:10:59
+404,508,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.7569,high,true,pagerduty,false,,2026-06-19 00:41:48
+405,509,7,search,search-api-1605640-8abaf,staging-use2-eks,0.9632,critical,true,email,false,,2026-06-23 09:40:38
+406,512,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.9519,critical,false,pagerduty,true,duplicate within suppression window,2026-06-21 12:58:07
+407,513,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.8714,critical,false,email,true,duplicate within suppression window,2026-06-18 19:44:55
+408,514,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.6137,medium,false,email,true,duplicate within suppression window,2026-06-20 20:37:17
+409,515,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.6913,high,false,slack,true,duplicate within suppression window,2026-06-23 08:25:04
+410,516,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.8682,critical,true,slack,false,,2026-06-17 23:15:48
+411,517,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.7487,high,true,email,false,,2026-06-22 13:28:42
+412,518,2,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.9155,critical,true,email,false,,2026-06-09 03:28:36
+413,519,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.614,medium,true,slack,false,,2026-06-15 13:28:51
+414,520,1,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.8082,high,true,teams,false,,2026-06-19 06:58:47
+415,521,10,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.7571,high,true,teams,false,,2026-06-20 08:04:29
+416,523,3,platform,config-svc-027a395-39a4d,prod-use2-eks,0.859,critical,true,teams,false,,2026-06-22 03:14:21
+417,524,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.6509,high,true,slack,false,,2026-06-18 02:04:56
+418,525,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8559,critical,false,teams,true,duplicate within suppression window,2026-06-23 09:53:21
+419,526,1,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7339,high,true,slack,false,,2026-06-21 15:19:11
+420,528,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.7092,high,true,slack,false,,2026-06-04 16:12:27
+421,529,1,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.7515,high,true,email,false,,2026-06-23 03:00:15
+422,530,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.6629,high,true,teams,false,,2026-06-21 02:20:56
+423,531,2,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.7354,high,true,teams,false,,2026-06-22 18:37:33
+424,532,1,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.7962,high,true,email,false,,2026-06-15 07:46:08
+425,533,1,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.8776,critical,false,teams,true,duplicate within suppression window,2026-06-23 10:45:43
+426,534,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.6679,high,true,slack,false,,2026-06-14 07:02:12
+427,535,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.877,critical,true,slack,false,,2026-06-22 20:42:41
+428,536,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.6287,medium,true,teams,false,,2026-06-23 10:48:44
+429,538,10,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.7412,high,true,pagerduty,false,,2026-06-19 03:33:28
+430,539,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.6619,high,true,teams,false,,2026-06-19 13:00:27
+431,541,2,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.7303,high,true,slack,false,,2026-06-12 23:49:02
+432,542,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.8611,critical,true,slack,false,,2026-06-17 18:09:43
+433,546,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.7202,high,true,pagerduty,false,,2026-06-19 04:48:39
+434,547,13,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.9688,critical,true,pagerduty,false,,2026-06-20 19:02:57
+435,548,10,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.8972,critical,true,slack,false,,2026-06-23 06:12:10
+436,549,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8477,high,true,pagerduty,false,,2026-06-14 09:14:39
+437,550,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6714,high,true,slack,false,,2026-06-19 03:06:02
+438,552,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.6137,medium,true,teams,false,,2026-06-21 14:52:31
+439,553,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.9219,critical,true,slack,false,,2026-06-20 21:50:35
+440,554,7,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.9048,critical,true,email,false,,2026-06-21 18:38:02
+441,555,8,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.9351,critical,true,teams,false,,2026-06-07 21:08:44
+442,558,8,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.664,high,false,slack,true,duplicate within suppression window,2026-06-20 07:24:47
+443,559,8,search,search-api-1605640-8abaf,staging-use2-eks,0.607,medium,true,slack,false,,2026-06-22 05:58:27
+444,560,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.6136,medium,true,email,false,,2026-06-21 02:32:35
+445,561,7,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.7375,high,true,teams,false,,2026-06-14 21:59:30
+446,562,2,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.8979,critical,true,email,false,,2026-06-23 06:29:24
+447,563,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.8299,high,true,pagerduty,false,,2026-06-13 12:38:44
+448,565,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.7635,high,true,slack,false,,2026-06-03 08:21:24
+449,569,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.8104,high,true,teams,false,,2026-06-19 15:14:25
+450,570,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.6925,high,true,email,false,,2026-06-22 14:07:35
+451,571,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.8074,high,true,teams,false,,2026-06-23 06:59:35
+452,572,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.8624,critical,true,teams,false,,2026-06-17 18:33:42
+453,573,1,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.678,high,true,pagerduty,false,,2026-06-22 19:24:06
+454,575,5,payments,payments-api-2729261-453da,staging-use2-eks,0.8213,high,true,teams,false,,2026-06-14 06:19:56
+455,577,1,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.8918,critical,true,slack,false,,2026-06-23 08:29:57
+456,582,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8489,high,true,pagerduty,false,,2026-06-15 07:52:45
+457,583,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.655,high,true,email,false,,2026-06-19 07:03:14
+458,584,7,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.6348,medium,true,pagerduty,false,,2026-06-21 11:20:23
+459,586,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.7324,high,true,email,false,,2026-06-23 10:29:43
+460,587,1,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.7882,high,true,slack,false,,2026-06-15 20:42:22
+461,588,5,search,search-api-8352074-5b766,prod-usw2-eks,0.8381,high,true,teams,false,,2026-06-12 22:09:46
+462,590,2,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.8505,critical,true,email,false,,2026-06-19 00:30:39
+463,591,7,identity,session-store-a097c68-649a1,staging-use2-eks,0.8197,high,true,teams,false,,2026-06-22 05:21:32
+464,593,2,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.9549,critical,true,teams,false,,2026-06-03 22:30:52
+465,594,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8029,high,true,teams,false,,2026-06-17 00:35:35
+466,595,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.6199,medium,true,slack,false,,2026-06-21 18:34:46
+467,596,2,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8999,critical,true,pagerduty,false,,2026-06-22 17:39:49
+468,597,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.718,high,true,teams,false,,2026-06-22 18:01:44
+469,599,10,identity,session-store-4732511-0dba8,prod-use2-eks,0.7248,high,true,teams,false,,2026-06-14 21:43:31
+470,600,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8285,high,true,teams,false,,2026-06-07 12:58:48
+471,601,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.6168,medium,true,teams,false,,2026-06-21 03:25:42
+472,602,5,search,search-api-be84964-d972c,dr-use1-eks,0.6511,high,true,teams,false,,2026-06-22 12:03:16
+473,603,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.704,high,true,pagerduty,false,,2026-06-19 20:43:31
+474,604,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.6272,medium,true,teams,false,,2026-06-20 00:52:55
+475,605,1,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.7386,high,true,email,false,,2026-06-04 03:43:52
+476,606,13,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.6198,medium,true,email,false,,2026-06-17 05:13:56
+477,607,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.6116,medium,true,pagerduty,false,,2026-06-21 05:52:02
+478,608,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7571,high,true,teams,false,,2026-06-22 19:48:15
+479,609,5,search,search-api-8352074-5b766,prod-usw2-eks,0.8485,high,true,email,false,,2026-06-15 13:26:14
+480,610,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.6413,medium,true,email,false,,2026-06-22 23:56:30
+481,611,2,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.752,high,true,slack,false,,2026-06-22 19:12:42
+482,613,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.7212,high,true,slack,false,,2026-06-23 04:35:06
+483,614,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.7236,high,true,pagerduty,false,,2026-06-15 06:12:14
+484,615,2,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.9445,critical,true,teams,false,,2026-06-14 07:38:08
+485,616,1,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8786,critical,true,email,false,,2026-06-19 23:28:34
+486,617,5,search,search-api-be84964-d972c,dr-use1-eks,0.8961,critical,true,teams,false,,2026-06-02 11:54:01
+487,618,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.7115,high,false,email,true,duplicate within suppression window,2026-06-17 06:38:32
+488,619,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.7494,high,true,email,false,,2026-06-15 04:15:01
+489,620,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.7939,high,true,teams,false,,2026-06-18 20:51:03
+490,621,8,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.9395,critical,true,teams,false,,2026-06-19 09:23:25
+491,622,6,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.7804,high,true,pagerduty,false,,2026-06-14 04:54:15
+492,623,7,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.7602,high,true,teams,false,,2026-06-08 00:58:57
+493,625,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.7282,high,false,teams,true,duplicate within suppression window,2026-06-22 22:06:40
+494,626,6,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.8462,high,true,teams,false,,2026-06-14 09:31:23
+495,627,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.7968,high,false,teams,true,duplicate within suppression window,2026-06-23 11:37:38
+496,628,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.8707,critical,true,slack,false,,2026-06-22 22:10:42
+497,629,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.8759,critical,true,teams,false,,2026-06-16 17:25:49
+498,630,10,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.9464,critical,true,slack,false,,2026-06-22 11:22:12
+499,631,2,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.7077,high,true,email,false,,2026-06-22 16:57:00
+500,632,7,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.7569,high,false,pagerduty,true,duplicate within suppression window,2026-06-18 02:08:27
+501,636,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.7941,high,true,pagerduty,false,,2026-06-19 06:51:31
+502,637,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.6065,medium,true,slack,false,,2026-06-11 14:47:52
+503,638,2,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.6251,medium,true,slack,false,,2026-06-19 07:12:05
+504,640,1,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.9508,critical,true,teams,false,,2026-06-16 17:39:44
+505,641,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.7931,high,true,email,false,,2026-06-14 19:35:26
+506,642,1,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.8445,high,true,email,false,,2026-06-13 06:26:35
+507,643,10,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.6638,high,true,teams,false,,2026-06-22 19:00:32
+508,644,14,search,indexer-6af7422-f66fc,dr-use1-eks,0.9253,critical,true,pagerduty,false,,2026-06-21 20:33:42
+509,645,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.8788,critical,true,teams,false,,2026-06-17 23:47:02
+510,646,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.6943,high,true,teams,false,,2026-06-21 08:31:30
+511,647,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.9544,critical,true,slack,false,,2026-06-17 16:17:19
+512,648,1,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7837,high,true,teams,false,,2026-06-14 12:22:00
+513,650,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.7564,high,true,email,false,,2026-06-21 01:55:39
+514,651,13,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.7985,high,true,teams,false,,2026-06-22 22:55:36
+515,653,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.6568,high,true,teams,false,,2026-06-20 17:21:36
+516,654,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.8257,high,false,teams,true,duplicate within suppression window,2026-06-23 03:41:26
+517,655,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.7373,high,true,teams,false,,2026-06-20 01:44:54
+518,656,1,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.8453,high,true,pagerduty,false,,2026-06-07 13:07:56
+519,657,7,identity,session-store-a097c68-649a1,staging-use2-eks,0.7894,high,true,slack,false,,2026-06-23 01:22:58
+520,658,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.7339,high,false,email,true,duplicate within suppression window,2026-06-16 02:05:09
+521,659,4,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.8095,high,true,teams,false,,2026-06-06 17:55:09
+522,662,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.9075,critical,true,email,false,,2026-06-22 10:24:05
+523,663,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.8729,critical,true,slack,false,,2026-06-18 00:37:11
+524,664,10,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.7171,high,true,email,false,,2026-06-13 23:42:12
+525,665,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.7161,high,true,email,false,,2026-06-19 14:19:34
+526,666,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.8383,high,true,teams,false,,2026-06-03 23:36:40
+527,667,2,notifications,notifications-b036879-82982,dr-use1-eks,0.9376,critical,true,slack,false,,2026-06-22 19:12:12
+528,669,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.9587,critical,true,teams,false,,2026-06-10 23:14:09
+529,670,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.7732,high,true,teams,false,,2026-06-23 11:02:25
+530,672,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.7056,high,true,teams,false,,2026-06-15 03:06:09
+531,673,8,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.8766,critical,true,email,false,,2026-06-05 23:38:06
+532,674,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.8006,high,true,email,false,,2026-06-21 10:16:20
+533,675,10,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.6405,medium,true,email,false,,2026-06-23 09:20:37
+534,676,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.6333,medium,true,teams,false,,2026-06-17 12:53:31
+535,678,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.6074,medium,true,email,false,,2026-06-12 17:52:47
+536,679,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8264,high,true,teams,false,,2026-05-31 07:25:39
+537,680,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6413,medium,true,email,false,,2026-06-14 00:07:52
+538,681,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.7557,high,true,pagerduty,false,,2026-06-21 03:08:43
+539,682,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.6079,medium,true,pagerduty,false,,2026-06-09 23:47:08
+540,683,5,payments,payments-api-2729261-453da,staging-use2-eks,0.6435,medium,true,slack,false,,2026-06-05 07:59:31
+541,684,10,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.9531,critical,true,pagerduty,false,,2026-06-07 10:53:01
+542,685,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.78,high,true,teams,false,,2026-06-22 04:54:31
+543,686,7,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.6318,medium,true,pagerduty,false,,2026-06-10 07:49:41
+544,687,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.9632,critical,true,slack,false,,2026-06-10 04:39:14
+545,688,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.9612,critical,true,slack,false,,2026-06-21 18:36:48
+546,689,3,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.8952,critical,true,teams,false,,2026-06-22 13:32:54
+547,690,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.8637,critical,true,pagerduty,false,,2026-06-21 20:38:34
+548,691,1,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.8884,critical,true,teams,false,,2026-06-22 04:24:53
+549,692,10,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.7283,high,true,pagerduty,false,,2026-06-22 18:13:21
+550,694,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.9252,critical,true,pagerduty,false,,2026-06-01 11:08:24
+551,695,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.7193,high,true,teams,false,,2026-06-20 14:58:04
+552,697,10,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7269,high,false,pagerduty,true,duplicate within suppression window,2026-06-06 13:46:51
+553,698,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.7607,high,true,teams,false,,2026-06-22 22:29:26
+554,699,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.7927,high,true,teams,false,,2026-06-14 01:25:36
+555,702,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.9516,critical,true,teams,false,,2026-06-08 06:44:45
+556,703,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7082,high,true,teams,false,,2026-06-10 18:27:50
+557,704,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.6534,high,true,teams,false,,2026-06-18 03:42:01
+558,705,2,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.8627,critical,true,slack,false,,2026-06-13 07:44:48
+559,706,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.7766,high,true,pagerduty,false,,2026-06-19 22:33:51
+560,708,7,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.9694,critical,true,slack,false,,2026-06-20 21:44:56
+561,709,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.6068,medium,true,teams,false,,2026-06-12 13:54:21
+562,710,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.9284,critical,true,teams,false,,2026-06-22 16:57:34
+563,711,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.7853,high,true,teams,false,,2026-06-21 10:54:13
+564,712,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.8834,critical,true,slack,false,,2026-06-23 05:10:55
+565,713,1,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.8088,high,false,email,true,duplicate within suppression window,2026-06-22 11:43:38
+566,714,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6997,high,true,slack,false,,2026-06-22 11:17:38
+567,717,14,search,indexer-6af7422-f66fc,dr-use1-eks,0.6389,medium,true,teams,false,,2026-06-22 03:49:43
+568,719,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.6041,medium,true,email,false,,2026-06-15 15:27:03
+569,720,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.7025,high,true,slack,false,,2026-06-18 00:10:08
+570,721,4,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.6964,high,true,email,false,,2026-05-31 23:04:36
+571,722,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.9694,critical,true,slack,false,,2026-06-18 19:47:04
+572,723,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8088,high,true,slack,false,,2026-06-21 12:06:42
+573,724,1,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.6743,high,false,teams,true,duplicate within suppression window,2026-06-22 05:25:02
+574,725,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.8793,critical,true,slack,false,,2026-06-04 14:48:52
+575,726,1,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.9535,critical,true,teams,false,,2026-06-17 00:57:12
+576,727,13,platform,image-resizer-9994630-7c707,prod-use2-eks,0.7256,high,false,pagerduty,true,duplicate within suppression window,2026-06-22 03:29:16
+577,728,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.6513,high,true,slack,false,,2026-06-22 04:35:56
+578,729,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.6766,high,true,slack,false,,2026-06-22 16:10:17
+579,730,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.7731,high,false,pagerduty,true,duplicate within suppression window,2026-06-19 02:35:24
+580,731,8,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.7221,high,true,pagerduty,false,,2026-06-12 10:03:26
+581,733,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.7251,high,true,pagerduty,false,,2026-06-23 10:27:47
+582,734,13,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.9503,critical,true,teams,false,,2026-06-21 20:20:57
+583,735,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.791,high,true,pagerduty,false,,2026-06-12 23:55:07
+584,736,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.6895,high,true,email,false,,2026-06-09 10:17:20
+585,737,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.8,high,true,email,false,,2026-06-09 14:00:07
+586,739,13,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.7461,high,false,email,true,duplicate within suppression window,2026-06-20 23:40:14
+587,740,2,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.9287,critical,true,email,false,,2026-06-18 01:24:49
+588,741,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.9611,critical,true,teams,false,,2026-06-22 14:29:21
+589,742,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.7424,high,true,teams,false,,2026-06-22 20:37:17
+590,743,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.6484,medium,true,teams,false,,2026-06-13 21:25:56
+591,744,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.6823,high,true,teams,false,,2026-06-17 15:04:46
+592,746,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.7324,high,true,email,false,,2026-06-06 22:20:32
+593,747,1,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.889,critical,true,slack,false,,2026-06-19 02:37:44
+594,749,2,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.9219,critical,true,teams,false,,2026-06-10 12:37:00
+595,750,2,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.7177,high,true,slack,false,,2026-06-15 01:56:09
+596,753,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.8131,high,true,email,false,,2026-06-23 03:31:53
+597,754,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.9619,critical,true,teams,false,,2026-06-20 10:12:53
+598,755,10,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.9466,critical,true,pagerduty,false,,2026-05-28 13:16:09
+599,756,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7677,high,true,slack,false,,2026-06-19 00:52:52
+600,757,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.6262,medium,false,teams,true,duplicate within suppression window,2026-06-01 02:25:28
+601,758,5,search,search-api-be84964-d972c,dr-use1-eks,0.6278,medium,true,pagerduty,false,,2026-06-05 09:47:44
+602,759,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.6423,medium,true,slack,false,,2026-06-22 08:30:14
+603,760,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.7407,high,true,pagerduty,false,,2026-06-07 16:53:03
+604,762,13,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.6624,high,true,teams,false,,2026-06-19 12:46:07
+605,763,1,notifications,notifications-b036879-82982,dr-use1-eks,0.8334,high,true,teams,false,,2026-06-22 02:55:57
+606,765,1,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7825,high,true,slack,false,,2026-06-04 00:41:07
+607,767,8,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.6563,high,true,email,false,,2026-06-22 01:36:04
+608,769,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.7071,high,true,teams,false,,2026-06-22 06:08:05
+609,771,2,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.667,high,true,slack,false,,2026-06-19 12:10:01
+610,772,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.9425,critical,true,teams,false,,2026-06-23 03:43:59
+611,773,1,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.759,high,true,teams,false,,2026-06-22 14:41:36
+612,774,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6693,high,true,pagerduty,false,,2026-06-23 07:04:25
+613,775,3,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.8019,high,true,slack,false,,2026-06-18 21:29:44
+614,776,13,search,search-api-1605640-8abaf,staging-use2-eks,0.6228,medium,true,teams,false,,2026-06-22 20:45:51
+615,777,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.8557,critical,true,pagerduty,false,,2026-06-03 05:45:21
+616,778,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.7099,high,true,slack,false,,2026-06-16 03:54:06
+617,780,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.7151,high,true,teams,false,,2026-06-21 05:19:45
+618,781,2,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.6499,medium,true,slack,false,,2026-06-09 00:22:39
+619,782,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.7691,high,true,email,false,,2026-06-22 03:13:30
+620,784,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.6955,high,true,slack,false,,2026-06-17 04:56:01
+621,789,1,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.7913,high,true,email,false,,2026-06-15 06:21:37
+622,790,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.7387,high,false,teams,true,duplicate within suppression window,2026-06-23 07:24:31
+623,791,1,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.7955,high,true,slack,false,,2026-06-16 04:55:25
+624,792,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.7586,high,true,pagerduty,false,,2026-06-23 08:57:33
+625,793,2,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.9634,critical,true,pagerduty,false,,2026-06-23 10:05:25
+626,794,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.8644,critical,true,slack,false,,2026-06-20 04:28:46
+627,795,5,payments,payments-api-2729261-453da,staging-use2-eks,0.9354,critical,true,email,false,,2026-06-05 22:36:53
+628,796,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.9184,critical,true,email,false,,2026-06-17 07:07:42
+629,797,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.7705,high,true,slack,false,,2026-06-21 17:03:50
+630,798,10,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.6434,medium,true,slack,false,,2026-06-20 10:40:17
+631,800,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.6231,medium,false,pagerduty,true,duplicate within suppression window,2026-06-14 16:16:44
+632,802,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.778,high,true,teams,false,,2026-06-19 02:17:29
+633,803,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.7849,high,true,email,false,,2026-06-15 12:43:27
+634,804,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.6637,high,true,email,false,,2026-06-16 22:53:33
+635,805,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.804,high,false,email,true,duplicate within suppression window,2026-06-15 13:47:45
+636,806,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.9089,critical,true,email,false,,2026-06-21 14:48:02
+637,807,2,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.7034,high,true,teams,false,,2026-06-17 05:57:08
+638,808,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.866,critical,false,teams,true,duplicate within suppression window,2026-06-17 10:51:13
+639,809,1,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.9542,critical,false,slack,true,duplicate within suppression window,2026-06-19 15:33:01
+640,810,2,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.882,critical,true,pagerduty,false,,2026-06-10 14:16:50
+641,812,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.9542,critical,true,pagerduty,false,,2026-06-22 03:32:28
+642,813,2,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.7493,high,true,teams,false,,2026-06-20 22:08:31
+643,814,1,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.8926,critical,true,teams,false,,2026-06-15 13:46:50
+644,817,10,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.8403,high,true,email,false,,2026-06-03 19:54:44
+645,818,5,payments,payments-api-2729261-453da,staging-use2-eks,0.9681,critical,false,email,true,duplicate within suppression window,2026-06-02 22:02:52
+646,821,2,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.8142,high,true,slack,false,,2026-06-09 03:16:40
+647,822,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.8597,critical,true,teams,false,,2026-06-14 07:19:34
+648,823,5,search,search-api-be84964-d972c,dr-use1-eks,0.7762,high,true,teams,false,,2026-05-31 14:24:53
+649,825,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.6395,medium,true,teams,false,,2026-06-18 14:52:31
+650,826,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.6608,high,true,email,false,,2026-06-20 00:50:15
+651,827,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.9317,critical,true,teams,false,,2026-06-22 15:14:19
+652,829,13,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.8127,high,false,teams,true,duplicate within suppression window,2026-06-14 15:39:12
+653,831,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.7257,high,true,teams,false,,2026-06-11 09:31:46
+654,832,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.7428,high,true,slack,false,,2026-06-14 21:47:58
+655,834,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.7727,high,false,email,true,duplicate within suppression window,2026-06-05 20:51:04
+656,835,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.8263,high,true,email,false,,2026-06-15 12:58:03
+657,836,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.9155,critical,true,slack,false,,2026-06-21 19:04:10
+658,837,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8134,high,true,teams,false,,2026-06-11 18:01:34
+659,838,5,search,search-api-8352074-5b766,prod-usw2-eks,0.9679,critical,true,teams,false,,2026-06-15 03:48:39
+660,839,8,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.67,high,true,teams,false,,2026-06-21 06:58:23
+661,842,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.7211,high,true,slack,false,,2026-06-16 12:43:18
+662,843,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.8922,critical,true,teams,false,,2026-05-30 23:31:18
+663,844,2,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.8729,critical,false,pagerduty,true,duplicate within suppression window,2026-06-06 23:12:16
+664,845,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8835,critical,true,email,false,,2026-06-13 08:45:23
+665,846,10,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.9132,critical,true,email,false,,2026-05-29 13:16:17
+666,847,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.7073,high,false,teams,true,duplicate within suppression window,2026-06-10 14:56:00
+667,848,7,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8158,high,true,teams,false,,2026-06-19 13:40:19
+668,851,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.6317,medium,true,pagerduty,false,,2026-06-18 08:26:26
+669,852,2,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7264,high,true,pagerduty,false,,2026-06-09 22:41:26
+670,853,7,search,search-api-1605640-8abaf,staging-use2-eks,0.6372,medium,false,pagerduty,true,duplicate within suppression window,2026-06-22 19:55:03
+671,854,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.7797,high,false,pagerduty,true,duplicate within suppression window,2026-06-20 01:13:18
+672,856,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.8833,critical,false,email,true,duplicate within suppression window,2026-05-28 07:56:09
+673,857,3,platform,config-svc-027a395-39a4d,prod-use2-eks,0.6254,medium,true,slack,false,,2026-06-18 03:56:49
+674,858,2,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.6555,high,true,slack,false,,2026-05-28 20:10:44
+675,859,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.7195,high,true,email,false,,2026-06-18 21:24:30
+676,861,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.9629,critical,true,teams,false,,2026-06-19 03:29:19
+677,863,2,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.9256,critical,false,slack,true,duplicate within suppression window,2026-06-22 23:38:47
+678,864,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.9135,critical,true,pagerduty,false,,2026-06-19 15:36:03
+679,865,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.8494,high,true,teams,false,,2026-06-23 00:48:36
+680,867,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.6558,high,true,teams,false,,2026-06-07 17:51:42
+681,868,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.8343,high,true,teams,false,,2026-06-02 06:02:14
+682,869,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.8477,high,false,email,true,duplicate within suppression window,2026-06-07 08:52:36
+683,870,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.6319,medium,true,email,false,,2026-06-16 10:49:35
+684,871,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7458,high,true,email,false,,2026-06-21 13:38:41
+685,872,10,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.8643,critical,true,slack,false,,2026-05-29 08:24:40
+686,873,1,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.7707,high,true,email,false,,2026-06-22 18:04:01
+687,874,8,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.6344,medium,true,teams,false,,2026-06-17 16:46:58
+688,876,1,identity,session-store-4732511-0dba8,prod-use2-eks,0.9569,critical,true,pagerduty,false,,2026-06-16 23:50:55
+689,877,1,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.7062,high,true,teams,false,,2026-06-05 19:30:43
+690,878,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.6809,high,true,teams,false,,2026-06-14 06:17:45
+691,879,2,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7425,high,true,slack,false,,2026-06-07 01:56:46
+692,880,1,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.6284,medium,true,slack,false,,2026-06-17 08:56:06
+693,882,8,platform,image-resizer-9994630-7c707,prod-use2-eks,0.8572,critical,true,teams,false,,2026-06-22 13:46:03
+694,883,8,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.8704,critical,true,email,false,,2026-06-15 22:01:24
+695,884,10,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8769,critical,true,teams,false,,2026-06-18 10:13:19
+696,885,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.9266,critical,true,teams,false,,2026-06-22 17:44:20
+697,886,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.8736,critical,true,teams,false,,2026-06-23 00:14:05
+698,887,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.6331,medium,false,slack,true,duplicate within suppression window,2026-06-01 02:06:26
+699,888,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8913,critical,true,pagerduty,false,,2026-06-20 00:18:51
+700,889,1,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.9525,critical,true,teams,false,,2026-06-05 12:35:26
+701,890,13,platform,image-resizer-9994630-7c707,prod-use2-eks,0.6738,high,true,slack,false,,2026-06-22 10:32:43
+702,891,1,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.7702,high,true,teams,false,,2026-06-19 04:05:36
+703,892,6,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.8935,critical,false,teams,true,duplicate within suppression window,2026-06-18 11:18:28
+704,893,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.7835,high,true,teams,false,,2026-06-07 02:47:05
+705,894,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.9091,critical,true,email,false,,2026-06-20 14:54:38
+706,895,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.6936,high,true,pagerduty,false,,2026-06-22 22:05:20
+707,896,2,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.8736,critical,true,teams,false,,2026-06-15 22:24:01
+708,897,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.6683,high,true,teams,false,,2026-06-02 15:54:34
+709,898,4,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.9695,critical,true,teams,false,,2026-06-08 13:29:00
+710,902,4,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.9684,critical,true,slack,false,,2026-06-22 16:34:55
+711,903,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.8111,high,true,slack,false,,2026-06-20 19:40:11
+712,904,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8918,critical,false,pagerduty,true,duplicate within suppression window,2026-06-19 04:43:17
+713,905,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.7404,high,true,teams,false,,2026-06-11 00:57:45
+714,906,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.6419,medium,true,email,false,,2026-06-13 19:14:03
+715,907,5,search,search-api-8352074-5b766,prod-usw2-eks,0.808,high,false,teams,true,duplicate within suppression window,2026-06-17 17:52:41
+716,908,10,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.9189,critical,true,pagerduty,false,,2026-06-22 14:07:14
+717,910,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.7409,high,true,slack,false,,2026-06-14 13:53:47
+718,911,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.6616,high,true,teams,false,,2026-06-22 11:13:04
+719,912,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.7233,high,false,pagerduty,true,duplicate within suppression window,2026-06-21 10:50:57
+720,913,8,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.7937,high,false,teams,true,duplicate within suppression window,2026-06-08 20:03:23
+721,916,10,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.7049,high,true,teams,false,,2026-06-10 16:39:56
+722,918,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.8608,critical,true,email,false,,2026-06-22 18:23:59
+723,919,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.8048,high,true,slack,false,,2026-06-21 11:58:49
+724,921,7,identity,session-store-a097c68-649a1,staging-use2-eks,0.9507,critical,true,teams,false,,2026-06-07 22:22:36
+725,922,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.6836,high,true,teams,false,,2026-06-02 04:50:43
+726,924,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.7815,high,true,teams,false,,2026-06-20 16:56:38
+727,925,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.8607,critical,true,email,false,,2026-06-23 05:34:03
+728,926,8,search,search-api-1605640-8abaf,staging-use2-eks,0.8939,critical,true,teams,false,,2026-06-22 17:53:28
+729,927,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.7205,high,true,teams,false,,2026-06-18 12:42:33
+730,928,5,payments,payments-api-2729261-453da,staging-use2-eks,0.9632,critical,true,email,false,,2026-06-19 15:47:33
+731,929,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.924,critical,true,pagerduty,false,,2026-06-01 10:54:29
+732,931,2,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.8503,critical,true,slack,false,,2026-06-01 23:27:02
+733,932,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8375,high,false,slack,true,duplicate within suppression window,2026-06-20 20:44:43
+734,934,5,search,search-api-be84964-d972c,dr-use1-eks,0.8643,critical,true,email,false,,2026-06-13 09:43:47
+735,935,1,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.656,high,true,slack,false,,2026-06-18 21:04:03
+736,936,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.9221,critical,true,teams,false,,2026-06-23 01:18:57
+737,937,13,platform,image-resizer-9994630-7c707,prod-use2-eks,0.7752,high,true,teams,false,,2026-06-21 18:47:15
+738,938,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6344,medium,true,slack,false,,2026-06-20 09:36:43
+739,939,8,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.8165,high,true,email,false,,2026-06-18 19:23:33
+740,941,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7273,high,true,teams,false,,2026-06-09 16:00:56
+741,943,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.6414,medium,true,slack,false,,2026-06-22 01:58:21
+742,944,10,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.9146,critical,true,email,false,,2026-06-03 10:15:37
+743,946,5,payments,payments-api-2729261-453da,staging-use2-eks,0.6755,high,true,pagerduty,false,,2026-06-02 18:02:28
+744,947,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.6837,high,true,teams,false,,2026-06-20 05:33:11
+745,948,2,notifications,notifications-b036879-82982,dr-use1-eks,0.7066,high,true,slack,false,,2026-06-23 09:18:58
+746,949,1,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.8344,high,true,email,false,,2026-06-22 16:59:04
+747,950,2,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.924,critical,true,teams,false,,2026-06-23 01:42:15
+748,951,1,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.776,high,true,teams,false,,2026-06-20 01:51:43
+749,953,5,payments,payments-api-2729261-453da,staging-use2-eks,0.6442,medium,true,email,false,,2026-06-21 03:21:49
+750,954,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.9067,critical,true,teams,false,,2026-06-11 18:47:00
+751,955,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.6594,high,true,slack,false,,2026-06-03 11:12:34
+752,956,1,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.9341,critical,true,teams,false,,2026-06-18 15:29:46
+753,957,6,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.8048,high,false,email,true,duplicate within suppression window,2026-06-20 13:18:46
+754,958,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.9278,critical,true,email,false,,2026-06-07 23:38:51
+755,959,10,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.8246,high,true,teams,false,,2026-06-06 18:30:13
+756,960,14,search,indexer-6af7422-f66fc,dr-use1-eks,0.7926,high,true,pagerduty,false,,2026-06-16 12:40:00
+757,961,7,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.6928,high,true,teams,false,,2026-06-22 10:18:50
+758,962,1,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.7266,high,true,teams,false,,2026-06-19 06:09:13
+759,965,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6116,medium,false,teams,true,duplicate within suppression window,2026-06-21 10:11:30
+760,966,5,payments,payments-api-2729261-453da,staging-use2-eks,0.7009,high,false,slack,true,duplicate within suppression window,2026-05-31 16:57:29
+761,967,1,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.7717,high,true,pagerduty,false,,2026-06-21 23:34:22
+762,968,5,search,search-api-be84964-d972c,dr-use1-eks,0.6737,high,true,email,false,,2026-06-18 18:08:42
+763,969,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.6358,medium,true,slack,false,,2026-06-11 04:18:51
+764,971,2,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.895,critical,true,email,false,,2026-06-15 09:38:12
+765,972,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.9324,critical,true,teams,false,,2026-06-20 11:07:35
+766,973,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.7613,high,true,teams,false,,2026-06-22 21:51:08
+767,974,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.7183,high,true,pagerduty,false,,2026-06-20 16:32:01
+768,975,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.7239,high,true,slack,false,,2026-06-23 06:23:38
+769,976,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.9157,critical,true,teams,false,,2026-06-19 07:33:03
+770,977,1,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.8506,critical,false,teams,true,duplicate within suppression window,2026-06-23 00:22:25
+771,978,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.7235,high,true,teams,false,,2026-06-10 02:24:33
+772,979,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.9669,critical,true,email,false,,2026-06-05 21:14:51
+773,980,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.8494,high,true,teams,false,,2026-06-04 19:19:28
+774,982,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.7596,high,true,teams,false,,2026-06-16 12:15:29
+775,986,2,identity,session-store-4732511-0dba8,prod-use2-eks,0.7868,high,true,teams,false,,2026-06-19 11:47:06
+776,987,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.7646,high,true,slack,false,,2026-06-06 17:12:02
+777,988,13,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.7866,high,true,pagerduty,false,,2026-06-18 15:03:32
+778,990,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.7767,high,true,teams,false,,2026-06-20 14:20:29
+779,991,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7982,high,true,teams,false,,2026-06-03 20:20:45
+780,992,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.8149,high,true,email,false,,2026-06-16 18:53:40
+781,993,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.7535,high,true,teams,false,,2026-06-04 12:25:32
+782,994,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.8687,critical,true,pagerduty,false,,2026-06-03 22:52:34
+783,995,3,notifications,notifications-1938743-28dca,prod-use2-eks,0.6604,high,true,slack,false,,2026-06-14 09:38:05
+784,996,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.6084,medium,true,email,false,,2026-06-23 07:07:20
+785,997,10,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.9511,critical,true,teams,false,,2026-06-09 16:12:36
+786,998,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.6238,medium,true,teams,false,,2026-06-22 08:08:43
+787,1000,7,identity,session-store-a097c68-649a1,staging-use2-eks,0.712,high,true,teams,false,,2026-06-07 10:06:12
+788,1002,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.744,high,false,teams,true,duplicate within suppression window,2026-06-22 07:26:28
+789,1007,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.601,medium,true,email,false,,2026-06-21 09:11:16
+790,1009,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.6219,medium,true,teams,false,,2026-06-13 09:01:48
+791,1010,13,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.6203,medium,true,slack,false,,2026-06-12 04:31:06
+792,1011,10,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.9097,critical,false,pagerduty,true,duplicate within suppression window,2026-06-16 11:44:59
+793,1012,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.654,high,true,slack,false,,2026-06-23 00:33:39
+794,1013,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.7758,high,true,email,false,,2026-06-13 15:10:25
+795,1014,13,identity,session-store-a097c68-649a1,staging-use2-eks,0.6471,medium,true,slack,false,,2026-06-07 12:46:58
+796,1016,10,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.744,high,true,email,false,,2026-06-04 19:17:34
+797,1017,13,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.891,critical,true,teams,false,,2026-06-09 07:34:10
+798,1018,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.7501,high,true,teams,false,,2026-06-23 00:21:01
+799,1019,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.8841,critical,true,teams,false,,2026-06-21 19:29:47
+800,1020,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.6324,medium,true,teams,false,,2026-06-07 11:24:01
+801,1021,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.968,critical,true,pagerduty,false,,2026-06-19 14:27:14
+802,1023,2,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.6745,high,true,email,false,,2026-06-23 07:07:05
+803,1024,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.7851,high,true,email,false,,2026-06-19 13:58:08
+804,1025,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.8245,high,true,pagerduty,false,,2026-06-18 16:46:09
+805,1026,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.8207,high,false,teams,true,duplicate within suppression window,2026-06-09 01:25:39
+806,1027,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.9694,critical,true,teams,false,,2026-06-18 03:58:26
+807,1028,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.9254,critical,true,teams,false,,2026-06-19 20:47:10
+808,1030,5,payments,payments-api-2729261-453da,staging-use2-eks,0.9287,critical,true,teams,false,,2026-06-04 08:04:29
+809,1031,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.6743,high,true,teams,false,,2026-06-18 12:02:52
+810,1032,10,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.9496,critical,true,slack,false,,2026-06-18 19:13:00
+811,1034,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8852,critical,true,slack,false,,2026-06-15 09:40:47
+812,1035,4,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.8665,critical,false,teams,true,duplicate within suppression window,2026-06-16 09:12:02
+813,1036,7,search,search-api-1605640-8abaf,staging-use2-eks,0.9594,critical,true,pagerduty,false,,2026-06-22 03:21:34
+814,1037,10,identity,session-store-4732511-0dba8,prod-use2-eks,0.8838,critical,true,teams,false,,2026-06-08 12:19:13
+815,1039,1,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.9184,critical,true,pagerduty,false,,2026-06-23 05:04:54
+816,1041,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.92,critical,true,teams,false,,2026-06-22 16:43:46
+817,1043,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.9116,critical,true,email,false,,2026-06-22 20:57:37
+818,1044,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.8664,critical,false,slack,true,duplicate within suppression window,2026-06-15 02:23:38
+819,1045,2,identity,session-store-4732511-0dba8,prod-use2-eks,0.8471,high,false,pagerduty,true,duplicate within suppression window,2026-06-16 20:42:16
+820,1046,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.7953,high,false,email,true,duplicate within suppression window,2026-06-22 13:38:15
+821,1047,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.8007,high,true,pagerduty,false,,2026-06-20 23:55:45
+822,1048,2,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.8335,high,false,email,true,duplicate within suppression window,2026-06-13 10:07:21
+823,1049,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8274,high,true,teams,false,,2026-06-14 04:35:08
+824,1050,4,orders,orders-api-cbca488-26609,prod-usw2-eks,0.6618,high,false,teams,true,duplicate within suppression window,2026-06-23 04:59:26
+825,1051,2,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.8559,critical,true,slack,false,,2026-06-18 15:52:09
+826,1055,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.7629,high,true,teams,false,,2026-06-22 23:59:33
+827,1056,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.9672,critical,true,slack,false,,2026-06-08 16:32:02
+828,1057,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.6111,medium,true,pagerduty,false,,2026-06-18 05:35:34
+829,1059,1,orders,orders-api-cbca488-26609,prod-usw2-eks,0.9563,critical,true,slack,false,,2026-06-23 04:27:52
+830,1061,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.9218,critical,false,teams,true,duplicate within suppression window,2026-06-22 02:50:39
+831,1062,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.612,medium,false,pagerduty,true,duplicate within suppression window,2026-06-19 00:00:33
+832,1063,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.6061,medium,true,slack,false,,2026-06-12 16:26:02
+833,1064,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.8719,critical,true,pagerduty,false,,2026-06-23 08:50:09
+834,1065,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8103,high,true,teams,false,,2026-06-07 10:58:57
+835,1066,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.8431,high,true,slack,false,,2026-06-06 08:42:45
+836,1067,13,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.867,critical,true,slack,false,,2026-06-19 00:43:14
+837,1069,5,search,search-api-8352074-5b766,prod-usw2-eks,0.7226,high,true,teams,false,,2026-06-20 10:07:36
+838,1070,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.9295,critical,true,teams,false,,2026-06-02 13:42:04
+839,1071,5,search,search-api-8352074-5b766,prod-usw2-eks,0.9299,critical,true,email,false,,2026-06-12 20:26:34
+840,1072,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6289,medium,true,teams,false,,2026-06-08 08:25:51
+841,1075,13,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.8823,critical,true,teams,false,,2026-06-20 23:06:45
+842,1076,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.738,high,true,pagerduty,false,,2026-06-04 22:53:20
+843,1077,10,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.7513,high,true,slack,false,,2026-06-20 17:04:41
+844,1081,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.9168,critical,true,teams,false,,2026-06-21 04:27:23
+845,1082,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.8615,critical,true,teams,false,,2026-06-16 22:30:39
+846,1085,14,search,indexer-6af7422-f66fc,dr-use1-eks,0.6031,medium,false,teams,true,duplicate within suppression window,2026-06-16 03:07:28
+847,1086,13,platform,config-svc-027a395-39a4d,prod-use2-eks,0.628,medium,false,teams,true,duplicate within suppression window,2026-06-21 03:10:13
+848,1087,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.6694,high,true,email,false,,2026-06-23 11:49:28
+849,1088,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.7278,high,true,teams,false,,2026-06-15 08:58:51
+850,1090,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.9619,critical,true,slack,false,,2026-06-20 06:39:13
+851,1092,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.7785,high,true,teams,false,,2026-06-21 11:13:12
+852,1093,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7088,high,true,pagerduty,false,,2026-06-14 04:50:39
+853,1097,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8662,critical,true,teams,false,,2026-06-17 02:53:01
+854,1098,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.8026,high,true,slack,false,,2026-06-05 00:45:41
+855,1099,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.6806,high,true,email,false,,2026-06-18 02:11:47
+856,1101,2,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.6498,medium,true,slack,false,,2026-05-31 23:29:05
+857,1102,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.7742,high,true,teams,false,,2026-06-22 06:18:06
+858,1103,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.7989,high,true,slack,false,,2026-06-21 10:00:08
+859,1104,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.78,high,true,email,false,,2026-06-12 18:12:08
+860,1105,2,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.6195,medium,true,pagerduty,false,,2026-06-15 12:56:11
+861,1106,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.9085,critical,true,teams,false,,2026-06-17 22:00:41
+862,1108,1,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.7207,high,true,email,false,,2026-06-20 16:46:48
+863,1109,10,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.8509,critical,true,email,false,,2026-06-22 19:04:08
+864,1110,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.8127,high,true,pagerduty,false,,2026-06-16 05:13:31
+865,1112,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.6552,high,false,email,true,duplicate within suppression window,2026-06-22 17:58:20
+866,1113,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.8489,high,true,pagerduty,false,,2026-06-06 18:31:17
+867,1114,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8103,high,true,teams,false,,2026-06-22 02:23:16
+868,1115,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8291,high,true,slack,false,,2026-06-10 15:51:50
+869,1118,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.6568,high,true,teams,false,,2026-06-05 17:35:24
+870,1119,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.9634,critical,true,slack,false,,2026-06-18 14:52:32
+871,1120,2,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.8958,critical,true,teams,false,,2026-06-11 10:59:53
+872,1121,10,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.9545,critical,false,pagerduty,true,duplicate within suppression window,2026-05-31 11:01:11
+873,1124,10,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.7637,high,true,teams,false,,2026-06-23 03:21:00
+874,1125,13,platform,image-resizer-9994630-7c707,prod-use2-eks,0.6646,high,true,teams,false,,2026-06-23 08:18:08
+875,1126,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8577,critical,true,pagerduty,false,,2026-06-21 09:01:55
+876,1128,10,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.6791,high,true,teams,false,,2026-06-20 00:39:35
+877,1129,2,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.7499,high,false,email,true,duplicate within suppression window,2026-06-14 01:48:56
+878,1132,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.6167,medium,true,teams,false,,2026-06-22 10:53:58
+879,1133,1,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8058,high,true,teams,false,,2026-06-19 05:54:33
+880,1136,5,search,search-api-be84964-d972c,dr-use1-eks,0.6101,medium,true,teams,false,,2026-06-04 05:14:52
+881,1138,14,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.9463,critical,true,slack,false,,2026-06-23 02:25:27
+882,1139,8,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.7653,high,true,teams,false,,2026-06-16 23:03:06
+883,1141,2,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.6793,high,true,teams,false,,2026-06-12 12:07:41
+884,1142,2,identity,session-store-4732511-0dba8,prod-use2-eks,0.6119,medium,false,slack,true,duplicate within suppression window,2026-06-10 21:24:16
+885,1143,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.7745,high,true,pagerduty,false,,2026-06-11 04:00:40
+886,1144,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.6797,high,true,email,false,,2026-06-21 05:15:48
+887,1145,13,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.9329,critical,true,email,false,,2026-06-17 21:33:29
+888,1146,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7993,high,true,email,false,,2026-06-03 21:37:03
+889,1148,2,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.8373,high,true,teams,false,,2026-06-23 02:47:39
+890,1149,10,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.665,high,true,teams,false,,2026-06-23 01:26:26
+891,1150,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.6204,medium,true,teams,false,,2026-06-10 22:35:05
+892,1152,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.9545,critical,true,slack,false,,2026-06-22 15:30:49
+893,1154,1,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.7752,high,true,email,false,,2026-06-20 10:24:39
+894,1156,5,search,search-api-be84964-d972c,dr-use1-eks,0.7479,high,true,email,false,,2026-06-12 18:15:46
+895,1157,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.6589,high,false,teams,true,duplicate within suppression window,2026-06-15 09:10:30
+896,1159,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.964,critical,false,teams,true,duplicate within suppression window,2026-06-16 09:24:27
+897,1160,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.8811,critical,true,teams,false,,2026-06-07 05:38:19
+898,1161,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.8038,high,true,slack,false,,2026-06-04 21:49:05
+899,1162,1,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.9442,critical,true,teams,false,,2026-06-15 19:27:35
+900,1163,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.7515,high,true,teams,false,,2026-06-23 00:26:59
+901,1165,10,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.7198,high,true,slack,false,,2026-06-09 08:14:10
+902,1167,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.6447,medium,true,teams,false,,2026-06-10 10:07:41
+903,1168,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.8423,high,true,teams,false,,2026-06-23 02:46:02
+904,1169,2,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.9439,critical,false,pagerduty,true,duplicate within suppression window,2026-06-14 23:17:30
+905,1170,2,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.9037,critical,true,pagerduty,false,,2026-06-23 03:59:01
+906,1171,3,ledger,ledger-svc-204e643-7d23b,prod-use2-eks,0.9035,critical,false,email,true,duplicate within suppression window,2026-06-17 14:29:41
+907,1172,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.9429,critical,true,slack,false,,2026-06-20 07:44:33
+908,1174,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.6179,medium,false,teams,true,duplicate within suppression window,2026-05-30 21:22:24
+909,1176,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.603,medium,true,teams,false,,2026-06-22 00:16:58
+910,1177,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.725,high,true,teams,false,,2026-05-27 22:39:59
+911,1178,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.9216,critical,true,teams,false,,2026-06-07 16:48:34
+912,1179,1,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.7169,high,true,slack,false,,2026-06-03 16:40:41
+913,1181,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.9675,critical,true,email,false,,2026-06-13 15:23:54
+914,1183,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.8893,critical,true,email,false,,2026-06-21 16:19:30
+915,1184,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.6386,medium,true,slack,false,,2026-06-03 07:45:49
+916,1185,5,payments,payments-api-2729261-453da,staging-use2-eks,0.8319,high,true,email,false,,2026-06-13 13:22:15
+917,1187,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.883,critical,true,teams,false,,2026-06-23 08:34:53
+918,1188,2,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.7527,high,true,pagerduty,false,,2026-06-23 10:15:48
+919,1189,5,search,search-api-8352074-5b766,prod-usw2-eks,0.9226,critical,true,teams,false,,2026-06-14 21:45:29
+920,1191,13,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.9175,critical,true,teams,false,,2026-06-14 17:18:46
+921,1195,2,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.9553,critical,true,teams,false,,2026-06-10 06:54:15
+922,1196,1,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8668,critical,true,slack,false,,2026-06-02 14:36:39
+923,1197,5,search,search-api-8352074-5b766,prod-usw2-eks,0.9616,critical,true,slack,false,,2026-06-23 10:56:36
+924,1198,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.6688,high,true,teams,false,,2026-06-22 20:01:38
+925,1199,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.8008,high,true,teams,false,,2026-06-21 01:29:15
+926,1200,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.6696,high,true,pagerduty,false,,2026-06-09 23:59:41
+927,1201,13,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.6742,high,true,pagerduty,false,,2026-06-21 11:40:32
+928,1202,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.6741,high,false,email,true,duplicate within suppression window,2026-05-29 15:35:24
+929,1204,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.7665,high,true,teams,false,,2026-06-23 10:26:04
+930,1205,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.6802,high,false,teams,true,duplicate within suppression window,2026-06-20 01:21:35
+931,1206,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.8785,critical,true,teams,false,,2026-06-20 02:22:17
+932,1207,2,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.7793,high,true,teams,false,,2026-06-09 07:23:17
+933,1208,4,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.7211,high,false,pagerduty,true,duplicate within suppression window,2026-06-21 03:35:20
+934,1209,1,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.7421,high,true,teams,false,,2026-06-21 08:56:17
+935,1210,2,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.6538,high,true,teams,false,,2026-06-19 01:27:28
+936,1211,4,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.6906,high,true,teams,false,,2026-06-20 10:14:33
+937,1215,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.6486,medium,true,pagerduty,false,,2026-06-22 00:10:07
+938,1216,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.7671,high,true,teams,false,,2026-06-16 19:57:11
+939,1217,10,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.9464,critical,true,pagerduty,false,,2026-06-09 07:10:23
+940,1218,2,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.6469,medium,true,slack,false,,2026-06-22 12:28:27
+941,1219,13,identity,session-store-a097c68-649a1,staging-use2-eks,0.6364,medium,true,slack,false,,2026-06-15 11:54:03
+942,1220,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.9122,critical,true,pagerduty,false,,2026-06-19 08:20:15
+943,1223,1,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.8856,critical,true,email,false,,2026-06-20 13:30:15
+944,1224,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.7952,high,false,teams,true,duplicate within suppression window,2026-06-21 21:57:58
+945,1225,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.92,critical,true,email,false,,2026-06-23 10:27:49
+946,1226,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.7198,high,true,teams,false,,2026-06-16 12:48:51
+947,1229,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.8989,critical,true,teams,false,,2026-06-18 23:37:55
+948,1230,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.915,critical,true,pagerduty,false,,2026-06-21 15:04:34
+949,1232,10,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.7454,high,true,pagerduty,false,,2026-06-17 08:43:26
+950,1236,4,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.6769,high,true,email,false,,2026-06-14 20:31:33
+951,1237,7,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.9318,critical,true,slack,false,,2026-06-14 23:14:11
+952,1240,2,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.622,medium,true,teams,false,,2026-06-22 17:29:28
+953,1241,6,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.6981,high,true,teams,false,,2026-06-22 17:47:02
+954,1242,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.7624,high,true,teams,false,,2026-06-20 10:31:58
+955,1243,5,search,search-api-be84964-d972c,dr-use1-eks,0.8151,high,true,email,false,,2026-05-31 22:16:06
+956,1244,2,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.7632,high,false,pagerduty,true,duplicate within suppression window,2026-06-09 23:54:19
+957,1245,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8987,critical,true,slack,false,,2026-06-15 11:24:41
+958,1247,2,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8351,high,false,pagerduty,true,duplicate within suppression window,2026-06-20 15:18:24
+959,1248,10,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8613,critical,true,teams,false,,2026-06-11 15:20:30
+960,1249,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.9121,critical,true,email,false,,2026-06-21 22:39:32
+961,1251,5,payments,payments-api-2729261-453da,staging-use2-eks,0.8105,high,true,email,false,,2026-06-04 09:45:56
+962,1252,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.9507,critical,true,slack,false,,2026-06-21 21:26:05
+963,1253,4,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.8407,high,true,teams,false,,2026-06-20 22:00:03
+964,1256,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.6477,medium,true,teams,false,,2026-06-18 02:47:12
+965,1257,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.7024,high,false,email,true,duplicate within suppression window,2026-06-20 09:49:48
+966,1258,2,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.8389,high,true,teams,false,,2026-06-21 11:37:55
+967,1259,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.8713,critical,true,email,false,,2026-06-13 02:12:24
+968,1261,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.953,critical,true,pagerduty,false,,2026-06-19 11:36:58
+969,1262,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.9025,critical,true,email,false,,2026-06-04 06:56:18
+970,1263,8,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.8565,critical,true,email,false,,2026-06-13 08:25:13
+971,1265,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.7102,high,false,email,true,duplicate within suppression window,2026-06-17 13:30:10
+972,1268,2,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.8529,critical,true,slack,false,,2026-06-17 10:09:40
+973,1269,2,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8093,high,false,email,true,duplicate within suppression window,2026-05-31 13:25:49
+974,1270,1,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.6264,medium,true,pagerduty,false,,2026-06-21 10:03:57
+975,1271,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.7776,high,false,email,true,duplicate within suppression window,2026-06-02 10:41:22
+976,1272,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.9566,critical,true,email,false,,2026-06-22 20:25:30
+977,1273,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.7118,high,true,pagerduty,false,,2026-06-23 08:38:07
+978,1274,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.8365,high,true,slack,false,,2026-06-20 04:43:34
+979,1276,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.7802,high,true,pagerduty,false,,2026-06-19 09:37:54
+980,1277,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.8946,critical,false,slack,true,duplicate within suppression window,2026-06-04 07:40:38
+981,1278,4,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.614,medium,true,teams,false,,2026-06-22 09:39:25
+982,1279,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.839,high,true,email,false,,2026-06-15 12:42:38
+983,1280,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.7253,high,true,pagerduty,false,,2026-06-18 00:38:17
+984,1282,1,notifications,notifications-b036879-82982,dr-use1-eks,0.8795,critical,false,teams,true,duplicate within suppression window,2026-06-22 17:43:33
+985,1283,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.9393,critical,true,teams,false,,2026-06-19 14:37:32
+986,1284,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.8935,critical,true,slack,false,,2026-06-16 08:15:39
+987,1285,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.9046,critical,true,pagerduty,false,,2026-06-21 07:26:18
+988,1286,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.8146,high,true,pagerduty,false,,2026-06-13 01:21:25
+989,1287,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.6682,high,true,teams,false,,2026-06-20 20:22:58
+990,1289,2,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.7043,high,true,pagerduty,false,,2026-06-22 01:51:10
+991,1290,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.853,critical,true,teams,false,,2026-06-20 18:52:18
+992,1291,7,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.9679,critical,true,pagerduty,false,,2026-06-21 20:59:27
+993,1292,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.8578,critical,true,teams,false,,2026-06-19 23:14:41
+994,1294,2,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.8631,critical,true,slack,false,,2026-06-21 00:24:21
+995,1296,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8429,high,true,slack,false,,2026-06-23 02:30:00
+996,1297,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.7662,high,true,email,false,,2026-06-07 09:29:37
+997,1298,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.8286,high,true,teams,false,,2026-06-19 13:02:07
+998,1299,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.8784,critical,true,slack,false,,2026-06-21 22:05:58
+999,1301,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.7241,high,true,teams,false,,2026-06-21 20:52:07
+1000,1302,5,orders,orders-worker-b907131-2627d,prod-usw2-eks,0.8474,high,false,teams,true,duplicate within suppression window,2026-06-21 00:59:34
+1001,1303,5,payments,payments-api-2729261-453da,staging-use2-eks,0.6082,medium,false,slack,true,duplicate within suppression window,2026-06-22 21:14:46
+1002,1304,10,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.8132,high,true,pagerduty,false,,2026-06-23 05:28:21
+1003,1305,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.8292,high,true,teams,false,,2026-06-10 10:45:07
+1004,1306,4,orders,orders-api-cbca488-26609,prod-usw2-eks,0.8364,high,true,slack,false,,2026-06-17 13:43:13
+1005,1307,10,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.8235,high,true,slack,false,,2026-06-10 16:46:01
+1006,1308,2,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.6209,medium,true,slack,false,,2026-06-23 07:50:28
+1007,1309,8,platform,image-resizer-9994630-7c707,prod-use2-eks,0.7472,high,true,slack,false,,2026-06-20 20:42:41
+1008,1310,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.6505,high,true,email,false,,2026-06-18 16:14:14
+1009,1311,3,platform,config-svc-027a395-39a4d,prod-use2-eks,0.6799,high,true,teams,false,,2026-06-17 22:25:19
+1010,1312,10,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.6161,medium,false,pagerduty,true,duplicate within suppression window,2026-06-11 21:18:44
+1011,1313,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.7961,high,true,pagerduty,false,,2026-06-19 02:23:36
+1012,1314,5,search,search-api-be84964-d972c,dr-use1-eks,0.8976,critical,true,pagerduty,false,,2026-06-02 23:09:04
+1013,1315,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.7914,high,true,pagerduty,false,,2026-06-16 10:20:08
+1014,1316,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.9656,critical,true,email,false,,2026-06-17 21:16:50
+1015,1317,10,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.7641,high,true,teams,false,,2026-05-28 23:24:23
+1016,1318,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8916,critical,true,pagerduty,false,,2026-06-09 06:08:50
+1017,1319,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.9247,critical,true,teams,false,,2026-06-22 21:24:37
+1018,1320,8,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.8461,high,true,teams,false,,2026-06-20 22:11:22
+1019,1321,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.6234,medium,false,teams,true,duplicate within suppression window,2026-06-12 22:54:07
+1020,1322,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.6644,high,true,email,false,,2026-06-23 10:21:02
+1021,1323,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.9233,critical,true,email,false,,2026-06-17 22:28:38
+1022,1324,8,search,search-api-1605640-8abaf,staging-use2-eks,0.9015,critical,true,slack,false,,2026-06-23 07:17:25
+1023,1325,5,kube-system,coredns-e513a45-fb7bf,prod-use2-eks,0.6757,high,true,teams,false,,2026-06-08 00:22:20
+1024,1326,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.9687,critical,false,pagerduty,true,duplicate within suppression window,2026-06-16 21:51:23
+1025,1327,1,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.9332,critical,true,email,false,,2026-06-22 11:44:56
+1026,1328,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.8331,high,true,pagerduty,false,,2026-06-20 20:18:25
+1027,1329,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.8506,critical,false,teams,true,duplicate within suppression window,2026-06-08 03:33:52
+1028,1331,5,checkout,cart-svc-882ca58-64a75,prod-usw2-eks,0.906,critical,true,slack,false,,2026-06-04 04:19:34
+1029,1332,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.6456,medium,true,pagerduty,false,,2026-06-19 00:30:44
+1030,1333,2,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.6804,high,false,teams,true,duplicate within suppression window,2026-06-23 11:17:30
+1031,1334,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6092,medium,true,slack,false,,2026-06-02 22:56:34
+1032,1335,7,search,search-api-1605640-8abaf,staging-use2-eks,0.7654,high,false,pagerduty,true,duplicate within suppression window,2026-06-22 09:21:26
+1033,1336,2,orders,orders-api-bfb2f93-32ad3,prod-use2-eks,0.6564,high,true,email,false,,2026-06-08 04:20:19
+1034,1337,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.6246,medium,true,teams,false,,2026-06-20 07:51:35
+1035,1338,5,search,search-api-be84964-d972c,dr-use1-eks,0.6881,high,false,pagerduty,true,duplicate within suppression window,2026-05-31 12:27:15
+1036,1339,2,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.9381,critical,true,pagerduty,false,,2026-06-06 09:48:33
+1037,1340,1,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.7932,high,true,email,false,,2026-05-29 05:11:15
+1038,1341,8,search,search-api-1605640-8abaf,staging-use2-eks,0.852,critical,true,teams,false,,2026-06-22 22:04:37
+1039,1342,13,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.61,medium,true,teams,false,,2026-06-19 18:39:01
+1040,1343,2,orders,orders-api-402bb51-ad48f,prod-usw2-eks,0.6531,high,true,teams,false,,2026-06-20 14:43:53
+1041,1345,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7784,high,true,pagerduty,false,,2026-06-16 01:02:27
+1042,1346,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.7182,high,true,slack,false,,2026-06-22 19:33:20
+1043,1347,7,identity,session-store-a097c68-649a1,staging-use2-eks,0.8267,high,true,email,false,,2026-06-20 20:38:23
+1044,1348,1,checkout,checkout-web-c2eb578-2d181,prod-use2-eks,0.679,high,true,slack,false,,2026-06-06 10:48:13
+1045,1351,13,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.6575,high,true,email,false,,2026-06-19 18:17:32
+1046,1353,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6499,medium,true,slack,false,,2026-06-17 02:32:40
+1047,1354,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8381,high,false,slack,true,duplicate within suppression window,2026-06-13 12:59:50
+1048,1356,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.6804,high,true,email,false,,2026-06-09 02:47:25
+1049,1357,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.8853,critical,true,pagerduty,false,,2026-05-30 08:49:09
+1050,1358,4,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.8454,high,true,slack,false,,2026-06-08 11:51:58
+1051,1359,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.9319,critical,true,teams,false,,2026-06-13 08:34:55
+1052,1360,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.7455,high,true,teams,false,,2026-06-17 20:45:19
+1053,1361,1,notifications,notifications-b036879-82982,dr-use1-eks,0.8212,high,false,teams,true,duplicate within suppression window,2026-06-23 07:39:33
+1054,1362,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.7386,high,true,pagerduty,false,,2026-06-12 18:54:13
+1055,1363,1,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.6733,high,true,slack,false,,2026-06-22 20:00:23
+1056,1364,1,notifications,notifications-b036879-82982,dr-use1-eks,0.8605,critical,true,teams,false,,2026-06-21 17:01:53
+1057,1365,7,platform,image-resizer-7bb3c89-50e74,prod-use2-eks,0.9369,critical,true,email,false,,2026-06-22 06:56:59
+1058,1368,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.828,high,true,pagerduty,false,,2026-06-23 01:12:03
+1059,1369,5,checkout,cart-svc-0a94879-c1bba,prod-usw2-eks,0.709,high,true,teams,false,,2026-06-09 21:56:31
+1060,1370,1,payments,payments-api-c9c2b74-00142,prod-use2-eks,0.9216,critical,true,slack,false,,2026-06-23 10:56:15
+1061,1371,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.8934,critical,true,teams,false,,2026-06-03 20:15:00
+1062,1372,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.8574,critical,false,pagerduty,true,duplicate within suppression window,2026-06-19 12:31:37
+1063,1373,10,payments,payments-api-7fa4649-debd8,prod-use2-eks,0.9468,critical,false,teams,true,duplicate within suppression window,2026-06-22 15:16:47
+1064,1374,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.6352,medium,true,teams,false,,2026-05-29 20:53:16
+1065,1376,5,search,search-api-15a6d76-12766,prod-usw2-eks,0.7793,high,true,slack,false,,2026-06-19 04:50:32
+1066,1377,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.7042,high,true,slack,false,,2026-06-22 06:05:55
+1067,1378,5,payments,payments-api-2729261-453da,staging-use2-eks,0.8527,critical,true,teams,false,,2026-06-06 01:09:58
+1068,1379,4,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.9455,critical,true,email,false,,2026-05-30 10:20:49
+1069,1380,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8002,high,true,slack,false,,2026-05-28 22:44:54
+1070,1381,4,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.8809,critical,true,teams,false,,2026-06-15 14:39:43
+1071,1383,4,payments,payments-worker-1d1bf52-dff66,prod-usw2-eks,0.8137,high,true,teams,false,,2026-06-21 09:14:35
+1072,1385,2,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.9325,critical,false,email,true,duplicate within suppression window,2026-06-14 07:49:01
+1073,1386,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.7884,high,true,teams,false,,2026-06-21 00:27:49
+1074,1387,8,kube-system,metrics-server-e2e6924-29c37,prod-use2-eks,0.6783,high,true,slack,false,,2026-06-11 23:20:17
+1075,1388,2,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.9313,critical,true,teams,false,,2026-06-20 08:23:29
+1076,1389,7,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.6795,high,true,slack,false,,2026-06-23 08:30:15
+1077,1390,10,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.8449,high,true,teams,false,,2026-06-22 08:32:20
+1078,1392,13,orders,orders-api-8330e48-f22f4,dr-use1-eks,0.6713,high,true,teams,false,,2026-06-10 13:48:31
+1079,1393,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.7904,high,false,email,true,duplicate within suppression window,2026-06-19 13:33:19
+1080,1394,2,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.6991,high,false,slack,true,duplicate within suppression window,2026-06-22 23:46:29
+1081,1395,1,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.7802,high,true,teams,false,,2026-06-01 23:31:04
+1082,1396,1,checkout,cart-svc-527eb80-045c0,prod-use2-eks,0.9522,critical,true,slack,false,,2026-06-13 06:20:54
+1083,1397,5,payments,payments-api-2729261-453da,staging-use2-eks,0.935,critical,true,teams,false,,2026-06-04 11:41:14
+1084,1398,5,search,search-api-8352074-5b766,prod-usw2-eks,0.6689,high,false,teams,true,duplicate within suppression window,2026-06-16 20:53:29
+1085,1399,5,ledger,ledger-svc-2014124-29b88,prod-usw2-eks,0.8854,critical,true,email,false,,2026-06-18 13:40:34
+1086,1403,4,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.8688,critical,true,pagerduty,false,,2026-05-30 00:11:33
+1087,1404,13,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.9256,critical,true,pagerduty,false,,2026-06-17 18:50:54
+1088,1406,1,payments,payments-api-58c5e74-26d34,prod-use2-eks,0.7919,high,true,teams,false,,2026-06-22 19:44:17
+1089,1409,10,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.8137,high,true,email,false,,2026-06-19 20:23:25
+1090,1414,13,notifications,notifications-1938743-28dca,prod-use2-eks,0.6987,high,true,teams,false,,2026-06-06 08:51:28
+1091,1416,10,checkout,checkout-web-4263246-52f3a,dr-use1-eks,0.7604,high,true,teams,false,,2026-06-23 02:16:50
+1092,1417,14,search,indexer-6af7422-f66fc,dr-use1-eks,0.8871,critical,true,pagerduty,false,,2026-06-06 23:45:31
+1093,1418,1,checkout,cart-svc-51c2594-4d271,prod-use2-eks,0.6245,medium,true,teams,false,,2026-06-14 20:02:08
+1094,1419,7,kube-system,coredns-4a8b365-1d9fc,prod-usw2-eks,0.7648,high,false,pagerduty,true,duplicate within suppression window,2026-06-17 19:45:51
+1095,1421,14,checkout,checkout-web-2b77739-52fdd,staging-use2-eks,0.6145,medium,false,teams,true,duplicate within suppression window,2026-06-23 06:19:31
+1096,1422,10,orders,orders-api-7f89525-97cdd,prod-use2-eks,0.8267,high,true,slack,false,,2026-06-08 07:33:03
+1097,1423,2,checkout,checkout-web-c343d41-6a8d2,prod-use2-eks,0.7039,high,true,email,false,,2026-06-17 21:59:48
+1098,1424,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.8462,high,false,email,true,duplicate within suppression window,2026-06-21 21:47:12
+1099,1426,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.8291,high,true,email,false,,2026-06-17 06:14:08
+1100,1428,1,notifications,notifications-b036879-82982,dr-use1-eks,0.831,high,false,slack,true,duplicate within suppression window,2026-06-21 19:37:03
+1101,1430,4,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.9372,critical,true,teams,false,,2026-06-16 18:20:40
+1102,1431,4,notifications,notifications-b036879-82982,dr-use1-eks,0.9498,critical,true,teams,false,,2026-06-23 03:33:20
+1103,1432,1,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.76,high,false,pagerduty,true,duplicate within suppression window,2026-06-22 02:22:48
+1104,1435,1,payments,payments-worker-bbc0947-0aa1a,prod-usw2-eks,0.6234,medium,true,pagerduty,false,,2026-06-22 21:01:36
+1105,1436,6,search,indexer-6af7422-f66fc,dr-use1-eks,0.7831,high,true,pagerduty,false,,2026-06-10 22:58:54
+1106,1437,2,payments,payments-api-423b015-b80bd,prod-usw2-eks,0.8772,critical,true,slack,false,,2026-06-04 01:36:44
+1107,1438,1,identity,session-store-4732511-0dba8,prod-use2-eks,0.6216,medium,true,slack,false,,2026-06-13 09:37:13
+1108,1441,1,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.7413,high,true,slack,false,,2026-06-22 22:03:29
+1109,1442,1,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.957,critical,false,teams,true,duplicate within suppression window,2026-05-30 00:09:37
+1110,1443,2,payments,payments-api-1e23165-1e35b,prod-usw2-eks,0.6605,high,true,pagerduty,false,,2026-05-30 02:39:45
+1111,1444,4,checkout,checkout-web-0101b48-2b2af,prod-use2-eks,0.9278,critical,true,teams,false,,2026-06-09 21:10:18
+1112,1446,10,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.83,high,true,teams,false,,2026-06-11 04:32:24
+1113,1447,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.9456,critical,true,email,false,,2026-05-30 21:58:04
+1114,1448,1,payments,payments-api-b9a1287-dbbfe,prod-usw2-eks,0.8464,high,false,email,true,duplicate within suppression window,2026-05-28 04:33:25
+1115,1449,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.9429,critical,true,email,false,,2026-06-14 19:10:48
+1116,1450,10,identity,session-store-4732511-0dba8,prod-use2-eks,0.6636,high,true,pagerduty,false,,2026-06-13 10:03:48
+1117,1453,3,ledger,ledger-svc-f4a6d64-16dde,prod-use2-eks,0.7337,high,true,pagerduty,false,,2026-06-17 10:47:16
+1118,1454,5,search,search-api-be84964-d972c,dr-use1-eks,0.7629,high,true,teams,false,,2026-06-19 15:22:39
+1119,1455,1,orders,orders-api-21c5d48-15186,prod-usw2-eks,0.6603,high,true,teams,false,,2026-06-15 22:28:36
+1120,1456,1,identity,session-store-1ac5266-1ca26,prod-use2-eks,0.6784,high,true,teams,false,,2026-06-09 19:49:27
+1121,1457,5,ledger,ledger-svc-0744083-43011,prod-usw2-eks,0.7465,high,true,pagerduty,false,,2026-06-19 13:02:48
+1122,1458,7,search,search-api-1605640-8abaf,staging-use2-eks,0.7393,high,true,teams,false,,2026-06-23 05:45:37
+1123,1461,5,ledger,ledger-svc-842cd31-95bfa,prod-usw2-eks,0.929,critical,true,email,false,,2026-06-19 00:43:53
+1124,1466,2,orders,orders-api-cbca488-26609,prod-usw2-eks,0.9231,critical,true,teams,false,,2026-06-15 10:34:56
+1125,1467,10,inventory,inventory-svc-1d6f570-1b50d,staging-use2-eks,0.6841,high,true,teams,false,,2026-06-16 03:05:31
+1126,1468,5,orders,orders-worker-8482791-f2d9f,prod-usw2-eks,0.7573,high,true,email,false,,2026-06-18 13:51:02
+1127,1469,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.6925,high,true,email,false,,2026-06-08 07:30:57
+1128,1470,10,payments,payments-api-1ce3577-591ac,prod-use2-eks,0.636,medium,false,email,true,duplicate within suppression window,2026-06-22 22:14:56
+1129,1471,2,inventory,inventory-svc-bf8f159-02345,prod-usw2-eks,0.7878,high,false,teams,true,duplicate within suppression window,2026-06-07 08:15:24
+1130,1475,5,search,search-api-a47d446-4ffe2,prod-usw2-eks,0.6411,medium,true,slack,false,,2026-06-19 22:41:00
+1131,1476,7,kube-system,coredns-37f1521-4cd3d,prod-usw2-eks,0.6941,high,true,email,false,,2026-06-20 05:45:44
+1132,1477,5,checkout,cart-svc-ee38458-64d46,prod-usw2-eks,0.6052,medium,true,teams,false,,2026-06-18 13:26:49
+1133,1478,8,identity,session-store-a097c68-649a1,staging-use2-eks,0.6972,high,true,slack,false,,2026-06-22 10:45:55
+1134,1479,1,orders,orders-api-e9b4a39-c3784,prod-use2-eks,0.7207,high,true,pagerduty,false,,2026-06-21 04:06:33
+1135,1480,5,identity,session-store-28ebc77-cf7c8,prod-usw2-eks,0.9567,critical,true,pagerduty,false,,2026-06-23 02:38:06
+1136,1481,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.8328,high,true,email,false,,2026-06-10 11:12:58
+1137,1482,4,orders,orders-api-cbca488-26609,prod-usw2-eks,0.6435,medium,true,teams,false,,2026-06-19 23:30:41
+1138,1484,5,kube-system,coredns-47d4438-c55d7,prod-use2-eks,0.9477,critical,true,teams,false,,2026-06-20 02:43:37
+1139,1485,1,checkout,cart-svc-26a7d77-aafdc,prod-use2-eks,0.7624,high,true,pagerduty,false,,2026-06-18 19:24:18
+1140,1487,5,search,search-api-d416b43-7cb20,dr-use1-eks,0.6782,high,true,email,false,,2026-06-21 12:24:56
+1141,1488,6,checkout,checkout-web-aca9086-f5fe6,staging-use2-eks,0.848,high,true,teams,false,,2026-06-23 09:54:07
+1142,1490,8,search,search-api-1605640-8abaf,staging-use2-eks,0.7849,high,true,teams,false,,2026-06-22 08:07:50
+1143,1493,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.8838,critical,true,teams,false,,2026-06-18 14:12:04
+1144,1495,5,platform,config-svc-929cd33-16be4,staging-use2-eks,0.8783,critical,false,teams,true,duplicate within suppression window,2026-06-21 08:03:22
+1145,1496,14,kube-system,metrics-server-6162d13-d4a14,prod-usw2-eks,0.9385,critical,true,teams,false,,2026-06-20 03:16:20
+1146,1497,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.8279,high,true,pagerduty,false,,2026-05-28 03:04:47
+1147,1498,1,checkout,checkout-web-6e9e217-a5c79,dr-use1-eks,0.6289,medium,true,teams,false,,2026-06-21 15:44:52
+1148,1499,5,identity,session-store-d825e25-14f9f,prod-usw2-eks,0.7494,high,true,email,false,,2026-06-05 20:19:34

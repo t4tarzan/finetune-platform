@@ -1,0 +1,9 @@
+id,source_name,source_type,enabled,priority,last_collection_at,last_row_count,total_rows_collected,total_rows_rejected,total_rows_deduped,status,error_message,created_at,updated_at
+1,sysdig,metrics,true,1,2026-06-23 11:58:03,3631,8246159,16051,66913,active,,2026-02-23 12:00:00,2026-06-23 12:00:00
+2,prometheus,metrics,true,2,2026-06-23 11:56:02,1269,7305947,22162,67116,active,,2026-02-23 12:00:00,2026-06-23 12:00:00
+3,kube_events,events,true,3,2026-06-23 11:59:17,2482,6496200,17212,76893,active,,2026-02-23 12:00:00,2026-06-23 12:00:00
+4,kube_state,state,true,4,2026-06-23 11:58:46,1510,1185579,29440,76842,active,,2026-02-23 12:00:00,2026-06-23 12:00:00
+5,loki,logs,false,5,2026-06-23 11:55:23,2436,3479176,43518,13266,inactive,disabled by operator,2026-02-23 12:00:00,2026-06-23 12:00:00
+6,cloudwatch,metrics,false,6,2026-06-23 11:55:43,2059,2133500,24212,31779,inactive,disabled by operator,2026-02-23 12:00:00,2026-06-23 12:00:00
+7,otel,traces,true,7,2026-06-23 11:58:31,3886,8883434,40191,6165,active,,2026-02-23 12:00:00,2026-06-23 12:00:00
+8,custom_exporter,metrics,false,8,2026-06-23 11:57:41,2535,5011108,2864,59125,inactive,disabled by operator,2026-02-23 12:00:00,2026-06-23 12:00:00

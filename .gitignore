@@ -31,6 +31,17 @@ data/sre-pods/*
 !data/sre-pods/dataset_v1.jsonl
 !data/sre-pods/dataset_v2.jsonl
 !data/example_train.jsonl
+# Bundled, generated datasets (deterministic SEED=42) committed for visibility — the
+# image regenerates identical copies at build. Training Q&A:
+!data/sre-tables-train/
+data/sre-tables-train/*
+!data/sre-tables-train/sre_qa.jsonl
+!data/sre-tables-train/sre_qa_v1.jsonl
+!data/sre-tables-train/sre_qa_v2.jsonl
+# 43 SRE observability tables (the cards / text-to-SQL data):
+!data/sre-tables/
+data/sre-tables/*
+!data/sre-tables/*.csv
 
 # IDE
 .idea/
