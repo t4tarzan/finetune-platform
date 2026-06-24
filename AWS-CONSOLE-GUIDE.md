@@ -103,6 +103,12 @@ your own computer. Total time ≈ **35–45 min** (most of it is waiting for AWS
       4. **Train tab** → **Dataset** dropdown → pick `sre_qa_v1.jsonl` → **Use This Dataset**
          → **Start Training** → watch the loss curve → **Export & Serve** → then pick
          `sre_qa_v2.jsonl`, set **Continue from fine-tuned**, retrain → the answer improves.
+      5. **Use your own data** → Train tab → **⬆ Upload CSV / JSONL** → choose a file (a
+         CSV with columns `question,reference_answer` works) → it's added to the dropdown
+         → train/retrain on it.
+         - Note: in *this* simple setup the data is **not saved** if the server restarts
+           (we skipped storage to keep it easy). For data that sticks around, use the
+           `EKS-RUNBOOK.md` install instead.
 
 8. **🧹 DELETE EVERYTHING when done** (so AWS stops charging you)
    1. In CloudShell:

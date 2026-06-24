@@ -96,6 +96,12 @@ kubectl -n finetune port-forward svc/finetune-platform 7100:7100
   *"a payments pod was flagged for OOM Risk — what do I do?"* → a remediation answer.
 - [ ] **Train tab** → pick `dataset_v1.jsonl` → **Start Training** → **Export & Serve** →
   then `dataset_v2.jsonl` with **Continue from fine-tuned** → retrain → chat again (improves).
+- [ ] **Bring your own data**: Train tab → **⬆ Upload CSV / JSONL** → pick a file
+  (CSV columns `question,reference_answer[,context]` or `prompt,completion`) → it
+  converts, lands in the dropdown, and you can train/retrain on it.
+  > For uploads + retrained models to **persist** across restarts, install with the
+  > PVC path (`--set persistence.storageClass=gp3`, the default). With
+  > `persistence.enabled=false` they're ephemeral (fine for a demo).
 
 ## 8. (Optional) Expose without port-forward
 - **LoadBalancer** (gets an external address):
@@ -109,6 +115,18 @@ kubectl -n finetune port-forward svc/finetune-platform 7100:7100
   helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
     --set ingress.enabled=true --set ingress.className=nginx --set basePath=/finetune-platform
   ```
+
+## 8b. Update an existing install to the latest image
+The published image (`:latest`) moves forward as the app improves. A node caches the old
+`:latest`, so a plain `helm upgrade` won't re-pull — force it:
+```bash
+helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
+  --set image.pullPolicy=Always
+kubectl -n finetune rollout restart deploy/finetune-platform
+kubectl -n finetune rollout status deploy/finetune-platform
+```
+On restart, `serve.sh` re-seeds **only missing** bundled files (`cp -n`) — your uploads
+and retrained models on the PVC are untouched.
 
 ## 9. Tear down (avoid AWS charges)
 ```bash
