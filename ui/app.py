@@ -937,10 +937,33 @@ PRESET_CARDS = [
             "FROM sop_gaps GROUP BY 1 ORDER BY gaps DESC LIMIT 15"},
 ]
 
+# Custom cards a user adds live in data/cards.json (on the volume), so they persist and
+# can be added without rebuilding the image.
+def _custom_cards_path():
+    return os.path.join(config.get("paths", {}).get("data", "data"), "cards.json")
+
+def _load_custom_cards():
+    p = _custom_cards_path()
+    if os.path.exists(p):
+        try:
+            return [c for c in json.load(open(p)) if c.get("id") and c.get("sql")]
+        except Exception:
+            return []
+    return []
+
+def _all_cards():
+    seen = {c["id"] for c in PRESET_CARDS}
+    return PRESET_CARDS + [c for c in _load_custom_cards() if c["id"] not in seen]
+
 @app.get("/api/data/cards")
 def data_cards():
-    """List the preset cards (title/category/desc) for the chat quick-action strip."""
-    return {"cards": [{k: c[k] for k in ("id", "title", "category", "desc")} for c in PRESET_CARDS]}
+    """Preset + user-added cards for the chat quick-action strip."""
+    out = []
+    custom_ids = {c["id"] for c in _load_custom_cards()}
+    for c in _all_cards():
+        out.append({"id": c["id"], "title": c["title"], "category": c.get("category", "custom"),
+                    "desc": c.get("desc", ""), "custom": c["id"] in custom_ids})
+    return {"cards": out}
 
 # Tables exposed to the text-to-SQL prompt (the demo-useful subset; full schema would
 # blow the context of a small local model).
@@ -949,11 +972,22 @@ ASK_TABLES = ["predictions", "alert_log", "kubernetes_events", "kubernetes_pod_s
               "expert_feedback", "sop_gaps"]
 _SCHEMA_CACHE = {"text": None}
 
+def _uploaded_tables() -> list:
+    """Tables the customer uploaded (data/uploads/*.csv stems) — added to the SQL prompt."""
+    updir = os.path.join(config.get("paths", {}).get("data", "data"), "uploads")
+    out = []
+    if os.path.isdir(updir):
+        for fn in sorted(os.listdir(updir)):
+            if fn.endswith(".csv"):
+                out.append(os.path.splitext(fn)[0].replace("-", "_"))
+    return out
+
 def _schema_summary() -> str:
     if _SCHEMA_CACHE["text"]:
         return _SCHEMA_CACHE["text"]
     ds = get_datastore(); have = set(ds.list_tables()); lines = []
-    for t in ASK_TABLES:
+    # ASK_TABLES (bundled, useful) + any tables the customer uploaded.
+    for t in ASK_TABLES + [u for u in _uploaded_tables() if u not in ASK_TABLES]:
         if t not in have:
             continue
         try:
@@ -1017,8 +1051,8 @@ def data_ask(question: str = Query(...), model: str = Query(...)):
 
 @app.get("/api/data/card")
 def data_card(id: str = Query(...)):
-    """Run a preset card's SQL against the local observability tables and return rows."""
-    card = next((c for c in PRESET_CARDS if c["id"] == id), None)
+    """Run a card's SQL (preset or user-added) against the local tables and return rows."""
+    card = next((c for c in _all_cards() if c["id"] == id), None)
     if not card:
         raise HTTPException(404, f"Unknown card: {id}")
     ds = get_datastore()
@@ -1030,6 +1064,65 @@ def data_card(id: str = Query(...)):
     # stringify for JSON safety (timestamps/decimals)
     data = [[("" if r[c] is None else str(r[c])) for c in cols] for r in rows]
     return {"id": id, "title": card["title"], "columns": cols, "rows": data, "count": len(data)}
+
+
+@app.post("/api/data/cards/add")
+async def data_card_add(request: Request):
+    """Add a user card (title + read-only SELECT). Saved to data/cards.json so it
+    persists and shows in the chat strip — no rebuild needed."""
+    body = await request.json()
+    title = (body.get("title") or "").strip()
+    sql = (body.get("sql") or "").strip().rstrip(";").strip()
+    if not title or not sql:
+        raise HTTPException(400, "title and sql are required.")
+    if not sql.lower().startswith("select"):
+        raise HTTPException(400, "SQL must be a read-only SELECT.")
+    if _BLOCK.search(sql):
+        raise HTTPException(400, "Only read-only SELECT queries are allowed.")
+    ds = get_datastore()
+    try:  # validate it runs
+        ds.query(sql + (" LIMIT 1" if "limit" not in sql.lower() else ""))
+    except Exception as e:
+        raise HTTPException(422, f"Query failed: {e}")
+    cid = _re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")[:40] or "card"
+    cards = _load_custom_cards()
+    cards = [c for c in cards if c["id"] != cid]  # replace same id
+    cards.append({"id": cid, "title": title, "category": body.get("category", "custom"),
+                  "desc": (body.get("desc") or "")[:200], "sql": sql})
+    os.makedirs(os.path.dirname(_custom_cards_path()), exist_ok=True)
+    json.dump(cards, open(_custom_cards_path(), "w"), indent=2)
+    return {"id": cid, "title": title}
+
+@app.delete("/api/data/cards")
+def data_card_delete(id: str = Query(...)):
+    """Delete a user-added card (presets can't be deleted)."""
+    cards = [c for c in _load_custom_cards() if c["id"] != id]
+    json.dump(cards, open(_custom_cards_path(), "w"), indent=2)
+    return {"deleted": id}
+
+@app.post("/api/data/upload-table")
+async def data_upload_table(request: Request,
+                            table: str = Query(..., description="Table name to create/replace"),
+                            mode: str = Query("replace", description="replace | append")):
+    """Upload a CSV as its own DuckDB table so the cards + Query-data run against the
+    customer's own observability data. The raw CSV is the request body."""
+    if not _re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", table):
+        raise HTTPException(400, "Invalid table name (letters, digits, underscore).")
+    raw = await request.body()
+    if not raw:
+        raise HTTPException(400, "Empty upload.")
+    updir = os.path.join(config.get("paths", {}).get("data", "data"), "uploads")
+    os.makedirs(updir, exist_ok=True)
+    path = os.path.join(updir, f"{table}.csv")
+    with open(path, "wb") as f:
+        f.write(raw)
+    ds = get_datastore()
+    try:
+        n = ds.import_table(path, table, mode=mode)
+    except Exception as e:
+        raise HTTPException(422, f"Import failed: {e}")
+    _SCHEMA_CACHE["text"] = None  # let text-to-SQL pick up the new table
+    return {"table": table, "rows": n, "mode": mode}
 
 
 def _detect_resources():
@@ -2127,7 +2220,17 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
       <span style="font-size:16px;font-weight:600;">Chat</span>
       <span style="font-size:12px;color:var(--text-secondary);font-weight:400;" id="current-model-label">no model selected</span>
     </div>
-    <div id="cards-strip" style="display:flex;gap:6px;overflow-x:auto;padding:8px 12px;border-bottom:1px solid var(--border);"></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px 0;">
+      <div id="cards-strip" style="display:flex;gap:6px;overflow-x:auto;flex:1;"></div>
+      <button onclick="toggleAddCard()" title="Add a preset card (title + SQL)" style="white-space:nowrap;padding:6px 10px;font-size:12px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:16px;cursor:pointer;">➕ Card</button>
+      <button onclick="document.getElementById('ft-table-file').click()" title="Upload your own data as a queryable table (CSV)" style="white-space:nowrap;padding:6px 10px;font-size:12px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:16px;cursor:pointer;">⬆ Data table</button>
+      <input type="file" id="ft-table-file" accept=".csv" style="display:none" onchange="uploadTable(this)"/>
+    </div>
+    <div id="add-card-form" style="display:none;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface2);">
+      <input id="ac-title" placeholder="Card title (e.g. Cert expiry soon)" style="width:100%;margin-bottom:6px;"/>
+      <textarea id="ac-sql" placeholder="SELECT … FROM predictions WHERE …" rows="2" style="width:100%;font-family:monospace;font-size:12px;margin-bottom:6px;"></textarea>
+      <div style="display:flex;gap:6px;"><button onclick="saveCard()" style="padding:6px 12px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;">Save card</button><button onclick="toggleAddCard()" style="padding:6px 12px;font-size:12px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);border-radius:4px;cursor:pointer;">Cancel</button><span id="ac-status" style="font-size:11px;align-self:center;"></span></div>
+    </div>
     <div class="chat-area" id="chat-area">
       <div class="empty-state">
         <div>Select a model and start chatting — or tap a card above to query your data</div>
@@ -3191,13 +3294,50 @@ async function loadCards() {
     if (!strip) return;
     const res = await fetch(BASE+'/api/data/cards');
     const data = await res.json();
-    if (!data.cards || !data.cards.length) { strip.style.display='none'; return; }
-    strip.innerHTML = data.cards.map(c =>
-      '<button onclick="runCard(\''+c.id+'\')" title="'+(c.desc||'')+'" '+
-      'style="white-space:nowrap;padding:6px 12px;font-size:12px;background:var(--surface2);'+
-      'color:var(--text);border:1px solid var(--border);border-radius:16px;cursor:pointer;">'+c.title+'</button>'
+    strip.innerHTML = (data.cards||[]).map(c =>
+      '<span style="white-space:nowrap;display:inline-flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:16px;">'+
+      '<button onclick="runCard(\''+c.id+'\')" title="'+(c.desc||'')+'" style="padding:6px 10px;font-size:12px;background:none;color:var(--text);border:none;cursor:pointer;">'+c.title+'</button>'+
+      (c.custom ? '<button onclick="deleteCard(\''+c.id+'\')" title="Remove this card" style="padding:6px 8px 6px 0;background:none;border:none;color:var(--text-secondary);cursor:pointer;">✕</button>' : '')+
+      '</span>'
     ).join('');
   } catch(e) { console.error(e); }
+}
+function toggleAddCard() {
+  const f = document.getElementById('add-card-form');
+  f.style.display = f.style.display === 'none' ? '' : 'none';
+}
+async function saveCard() {
+  const title = document.getElementById('ac-title').value.trim();
+  const sql = document.getElementById('ac-sql').value.trim();
+  const st = document.getElementById('ac-status');
+  st.style.color = 'var(--text-secondary)'; st.textContent = 'Validating…';
+  try {
+    const r = await fetch(BASE+'/api/data/cards/add', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, sql})});
+    const d = await r.json();
+    if (!r.ok) { st.style.color='#f85149'; st.textContent = '⚠️ '+(d.detail||'failed'); return; }
+    st.style.color='var(--success)'; st.textContent='✅ added';
+    document.getElementById('ac-title').value=''; document.getElementById('ac-sql').value='';
+    await loadCards(); setTimeout(toggleAddCard, 600);
+  } catch(e) { st.style.color='#f85149'; st.textContent='⚠️ '+e.message; }
+}
+async function deleteCard(id) {
+  await fetch(BASE+'/api/data/cards?id='+encodeURIComponent(id), {method:'DELETE'}).catch(()=>{});
+  loadCards();
+}
+async function uploadTable(input) {
+  const file = input.files && input.files[0]; if (!file) return;
+  let name = prompt('Table name for "'+file.name+'" (letters/digits/underscore):',
+                    file.name.replace(/\.csv$/i,'').replace(/[^A-Za-z0-9_]/g,'_'));
+  if (!name) { input.value=''; return; }
+  const ca = document.getElementById('chat-area'); const empty = ca.querySelector('.empty-state'); if (empty) empty.remove();
+  const ld = document.createElement('div'); ld.className='message assistant'; ld.innerHTML='<div class="loading"></div> Importing table…'; ca.appendChild(ld);
+  try {
+    const body = await file.text();
+    const r = await fetch(BASE+'/api/data/upload-table?table='+encodeURIComponent(name), {method:'POST', headers:{'Content-Type':'text/plain'}, body});
+    const d = await r.json();
+    ld.innerHTML = r.ok ? ('✅ Imported <b>'+d.rows+'</b> rows as table <code>'+d.table+'</code>. Use it in <b>🗄️ Query data</b> or add a card with <code>SELECT … FROM '+d.table+'</code>.') : ('⚠️ '+(d.detail||'import failed'));
+  } catch(e) { ld.innerHTML='⚠️ '+e.message; }
+  input.value=''; ca.scrollTop = ca.scrollHeight;
 }
 async function runCard(id) {
   const ca = document.getElementById('chat-area');
