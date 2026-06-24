@@ -1032,6 +1032,65 @@ def data_card(id: str = Query(...)):
     return {"id": id, "title": card["title"], "columns": cols, "rows": data, "count": len(data)}
 
 
+def _detect_resources():
+    """CPU/RAM available to this process — cgroup-aware so it reflects the pod's
+    request/limit, not just the node total. Falls back to node totals (bare metal / Mac)."""
+    cpu_total = os.cpu_count() or 1
+    cpu_limit = float(cpu_total)
+    try:  # cgroup v2
+        q, p = open("/sys/fs/cgroup/cpu.max").read().split()
+        if q != "max":
+            cpu_limit = max(1.0, round(int(q) / int(p), 1))
+    except Exception:
+        try:  # cgroup v1
+            q = int(open("/sys/fs/cgroup/cpu/cpu.cfs_quota_us").read())
+            p = int(open("/sys/fs/cgroup/cpu/cpu.cfs_period_us").read())
+            if q > 0:
+                cpu_limit = max(1.0, round(q / p, 1))
+        except Exception:
+            pass
+    # total RAM (Linux /proc, else sysconf for Mac)
+    mem_total = 0
+    try:
+        for ln in open("/proc/meminfo"):
+            if ln.startswith("MemTotal"):
+                mem_total = int(ln.split()[1]) * 1024; break
+    except Exception:
+        try:
+            mem_total = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
+        except Exception:
+            mem_total = 0
+    mem_limit = mem_total
+    try:  # cgroup v2
+        v = open("/sys/fs/cgroup/memory.max").read().strip()
+        if v != "max":
+            mem_limit = int(v)
+    except Exception:
+        try:  # cgroup v1
+            v = int(open("/sys/fs/cgroup/memory/memory.limit_in_bytes").read())
+            if v < (1 << 62):
+                mem_limit = v
+        except Exception:
+            pass
+    GB = 1024 ** 3
+    if mem_total and mem_limit:
+        mem_limit = min(mem_limit, mem_total)
+    return {
+        "cpu_total": cpu_total,
+        "cpu_limit": cpu_limit,
+        "mem_total_gb": round(mem_total / GB, 1) if mem_total else None,
+        "mem_limit_gb": round(mem_limit / GB, 1) if mem_limit else None,
+        "capped": cpu_limit < cpu_total,
+    }
+
+
+@app.get("/api/system")
+def system_resources():
+    """CPU/RAM available to training (cgroup-aware). The pod's resource LIMIT is the cap;
+    raise it with helm `--set resources.limits.cpu=N --set resources.limits.memory=…`."""
+    return _detect_resources()
+
+
 @app.get("/api/data/stats")
 def data_stats():
     """Get data store statistics."""
@@ -2163,6 +2222,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 
         <!-- Step 3: Hyperparameters -->
         <div class="form-section"><h4>⚙️ Hyperparameters</h4></div>
+        <div id="ft-sysres" style="margin-bottom:8px;padding:8px 10px;border-radius:4px;font-size:11px;background:var(--surface2);border:1px solid var(--border);color:var(--text-secondary);">Detecting system resources…</div>
         <div class="form-row">
           <div class="form-group">
             <label>LoRA Rank <span style="font-size:10px;color:var(--text-secondary);">ⓘ</span></label>
@@ -2553,6 +2613,23 @@ async function loadDatasets() {
       sel.appendChild(o);
     });
   } catch (e) { console.error(e); }
+}
+
+// Show the CPU/RAM available to training (cgroup-aware) so the user knows the cap.
+async function loadSystemResources() {
+  const el = document.getElementById('ft-sysres');
+  if (!el) return;
+  try {
+    const s = await (await fetch(BASE + '/api/system')).json();
+    const cpu = s.capped
+      ? `<b>${s.cpu_limit}</b> of ${s.cpu_total} CPUs (pod limit)`
+      : `<b>${s.cpu_limit}</b> CPUs`;
+    const ram = s.mem_limit_gb ? `<b>${s.mem_limit_gb} GB</b> RAM` : 'RAM n/a';
+    el.innerHTML = `🖥️ Training will use ${cpu} · ${ram}.` +
+      (s.capped ? ` <span style="color:var(--warning)">To use more, raise the pod limit:</span> ` +
+        `<code>helm upgrade … --set resources.limits.cpu=${s.cpu_total} --set resources.requests.cpu=${Math.max(1,Math.floor(s.cpu_total/2))}</code>`
+                : ` Bigger node = faster CPU training.`);
+  } catch (e) { el.style.display = 'none'; }
 }
 
 // Upload a CSV/JSONL → converted to training JSONL under data/uploads/, then added to
@@ -3153,6 +3230,7 @@ loadLeaderboard();
 loadDocs();
 loadAdapters();
 loadDatasets();
+loadSystemResources();
 checkInferenceStatus();
 initTrainState();
 setInterval(loadLeaderboard, 30000);

@@ -36,6 +36,31 @@ def check_stop(stop_file: str) -> bool:
     return bool(stop_file) and os.path.exists(stop_file)
 
 
+def _effective_cpu_threads(override=None) -> int:
+    """CPU threads for training = the cgroup CPU limit (what the pod is allowed), or an
+    explicit override, falling back to the node CPU count on bare metal."""
+    if override:
+        try:
+            return max(1, int(override))
+        except Exception:
+            pass
+    total = os.cpu_count() or 1
+    limit = total
+    try:  # cgroup v2
+        q, p = open("/sys/fs/cgroup/cpu.max").read().split()
+        if q != "max":
+            limit = max(1, int(int(q) / int(p)))
+    except Exception:
+        try:  # cgroup v1
+            q = int(open("/sys/fs/cgroup/cpu/cpu.cfs_quota_us").read())
+            p = int(open("/sys/fs/cgroup/cpu/cpu.cfs_period_us").read())
+            if q > 0:
+                limit = max(1, int(q / p))
+        except Exception:
+            pass
+    return max(1, min(total, limit))
+
+
 def resolve_model_id(base_model: str) -> str:
     """Map non-loadable ids (MLX-community, Ollama tags, empty) to a CPU HF id.
 
@@ -101,7 +126,11 @@ def run(config: dict):
     emit("status", phase="importing_modules", message="Importing PyTorch / transformers / PEFT...")
     try:
         import torch
-        torch.set_num_threads(max(1, os.cpu_count() or 1))
+        # Use the CPU the pod is actually allowed (cgroup limit), not the node total —
+        # oversubscribing threads past the cgroup cap just adds contention. An explicit
+        # cpu_threads in the config overrides. Raise throughput by raising the pod's
+        # CPU limit (helm resources.limits.cpu), then training scales automatically.
+        torch.set_num_threads(_effective_cpu_threads(config.get("cpu_threads")))
         from datasets import Dataset
         import transformers
         from transformers import (

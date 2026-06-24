@@ -38,13 +38,17 @@ basePath: ""
 # Sized for a modest CPU node (e.g. m5.xlarge = 4 vCPU / 16 GB, no GPU).
 # Good for 0.5B–1.5B with small datasets. Raise for larger models; CPU training is
 # slow regardless — use a GPU node group + a CUDA image for real throughput.
+# Training is CPU-bound; the pod's CPU limit caps it. By default we set NO cpu limit so
+# training bursts to all cores on the node (fastest). Set a cpu limit only on a shared
+# cluster where you must cap it. The worker is cgroup-aware — it auto-uses whatever CPU
+# the pod is allowed, so raising/removing the limit scales training with no other change.
 resources:
   requests:
-    cpu: "1"
-    memory: 4Gi
+    cpu: "2"
+    memory: 8Gi
   limits:
-    cpu: "3"
-    memory: 12Gi
+    # cpu: "8"          # uncomment to cap CPU on a shared node
+    memory: 16Gi
 
 # Persistent volumes (EBS via the EKS CSI driver). Each is ReadWriteOnce, which is
 # why the pod is single-replica. Use an EFS storageClass (RWX) only if you later
