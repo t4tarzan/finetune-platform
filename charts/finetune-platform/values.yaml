@@ -82,7 +82,9 @@ ingress:
 # Fine-tuned models work WITHOUT this (served by :7200). Pull a base model after
 # rollout: kubectl exec -c ollama deploy/<release> -- ollama pull qwen2.5:0.5b
 ollama:
-  enabled: false
+  enabled: true            # base-model chat sidecar (air-gapped, models baked in). Set
+                           # false to drop it (smaller footprint; fine-tuned chat + cards
+                           # + text-to-SQL still work). Needs a node with ~24GB+ RAM.
   # Air-gapped sidecar with base models BAKED IN (no runtime `ollama pull`). Built by
   # .github/workflows/docker-publish-ollama.yml from Dockerfile.ollama. Use the stock
   # "ollama/ollama:latest" only if your cluster has internet to pull models.
