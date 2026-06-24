@@ -13,7 +13,12 @@
 image:
   repository: "ghcr.io/t4tarzan/finetune-platform"
   tag: "latest"
-  pullPolicy: IfNotPresent
+  # Always re-pull on (re)start, so the freshest :latest is used. A running pod still
+  # needs a restart to pick up a new push: `kubectl rollout restart deploy/<release>`.
+  # For reproducible/pinned deploys, set tag to a sha (e.g. sha-0117632) — then it's
+  # immutable. For a strictly air-gapped cluster whose registry mirror may be offline at
+  # restart, set this to IfNotPresent so the cached image is reused.
+  pullPolicy: Always
 imagePullSecrets: []        # e.g. [{ name: ecr-creds }]
 
 # Single-instance, stateful. Do NOT raise — multiple replicas would fight over the

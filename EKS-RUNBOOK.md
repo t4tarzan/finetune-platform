@@ -117,16 +117,15 @@ kubectl -n finetune port-forward svc/finetune-platform 7100:7100
   ```
 
 ## 7b. Update an existing install to the latest image
-The published image (`:latest`) moves forward as the app improves. A node caches the old
-`:latest`, so a plain `helm upgrade` won't re-pull — force it:
+The chart pulls `:latest` with `pullPolicy: Always`, so a **restart** grabs the newest image:
 ```bash
-helm upgrade finetune-platform oci://ghcr.io/t4tarzan/charts/finetune-platform --version 0.1.0 -n finetune --reuse-values \
-  --set image.pullPolicy=Always
 kubectl -n finetune rollout restart deploy/finetune-platform
 kubectl -n finetune rollout status deploy/finetune-platform
 ```
+(If you also changed chart settings, run `helm upgrade … --version 0.1.0 -n finetune --reuse-values` first.)
 On restart, `serve.sh` re-seeds **only missing** bundled files (`cp -n`) — your uploads
-and retrained models on the PVC are untouched.
+and retrained models on the PVC are untouched. For a pinned/reproducible deploy instead,
+install with `--set image.tag=sha-XXXXXXX`.
 
 ## 8. Tear down (avoid AWS charges)
 ```bash
