@@ -57,20 +57,16 @@ your own computer. Total time ≈ **35–45 min** (most of it is waiting for AWS
       ```
       - ✅ Expect **one** line with **`STATUS Ready`**.
 
-5. **Get the app and install it** (one command)
-   1. Download the app's install files:
-      ```bash
-      git clone https://github.com/t4tarzan/finetune-platform.git
-      cd finetune-platform
-      ```
-   2. Install it (this version needs **no storage setup** — the data is inside the image,
-      and it gives you a public web link):
-      ```bash
-      helm install finetune-platform charts/finetune-platform \
-        --namespace finetune --create-namespace \
-        --set persistence.enabled=false \
-        --set service.type=LoadBalancer
-      ```
+5. **Install the app — one command** (nothing to download first)
+   - The app is published to a registry, so this single command installs it (no source
+     code, no `git`). It needs **no storage setup** (data is inside the image) and gives
+     you a **public web link**:
+     ```bash
+     helm install finetune-platform oci://ghcr.io/t4tarzan/charts/finetune-platform --version 0.1.0 \
+       --namespace finetune --create-namespace \
+       --set persistence.enabled=false \
+       --set service.type=LoadBalancer
+     ```
    - ✅ Ends with **`STATUS: deployed`**.
 
 6. **Wait for it to start, then get your link**

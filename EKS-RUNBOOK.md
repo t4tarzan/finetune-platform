@@ -12,9 +12,9 @@ data, preset cards, text-to-SQL chat, and a pre-trained `sre-assistant` — from
 ## 0. Install these tools (once, on your laptop)
 - [ ] `aws` CLI — configured (`aws configure`) with access to the account
 - [ ] `kubectl`
-- [ ] `helm` (v3)
-- [ ] `git`
+- [ ] `helm` (v3.8+ — for OCI registry installs)
 - [ ] `eksctl` — only if you need to **create** a cluster in step 1
+- [ ] `git` — **optional**, only if you want to build/customise from source instead
 
 ## 1. Get a cluster + point kubectl at it
 - **Option A — you already have an EKS cluster:**
@@ -54,29 +54,24 @@ data, preset cards, text-to-SQL chat, and a pre-trained `sre-assistant` — from
   allowVolumeExpansion: true
   EOF
   ```
-  - Or just use your existing class and pass its name in step 4.
+  - Or just use your existing class and pass its name in step 3.
 
-## 3. Get the chart
+## 3. Deploy — one command (no download)
+The chart is published to the registry, so install it directly — **no `git clone`, no
+source to fetch**:
 ```bash
-git clone https://github.com/t4tarzan/finetune-platform.git
-cd finetune-platform
-```
-
-## 4. Deploy — the one command
-```bash
-helm install finetune-platform charts/finetune-platform \
+helm install finetune-platform oci://ghcr.io/t4tarzan/charts/finetune-platform --version 0.1.0 \
   --namespace finetune --create-namespace \
   --set persistence.storageClass=gp3
 ```
-- The image (`ghcr.io/t4tarzan/finetune-platform:latest`, amd64) is the chart default — nothing else to set.
-- Using a different StorageClass? change `--set persistence.storageClass=<name>`.
-- **Base-model chat, air-gapped:** add `--set ollama.enabled=true`. This runs the
-  `finetune-ollama` sidecar whose base models (qwen2.5:0.5b/1.5b) are **baked in** — no
-  internet pull. (The fine-tuned `sre-assistant`, cards, and Query-data already work
-  without it.) Needs the `finetune-ollama` image to be pullable (public, or a pull
-  secret) and a node with a bit more RAM (use `m5.2xlarge`).
+- The app + Ollama images (amd64) are the chart defaults. Base-model chat (air-gapped,
+  baked models) is **on by default** — needs a `m5.2xlarge`-sized node. Drop it with
+  `--set ollama.enabled=false`.
+- Different StorageClass? change `--set persistence.storageClass=<name>`.
+- *Prefer to customise / build your own?* `git clone` the repo and
+  `helm install finetune-platform charts/finetune-platform …` from the local path instead.
 
-## 5. Wait for it to come up
+## 4. Wait for it to come up
 ```bash
 kubectl -n finetune rollout status deploy/finetune-platform
 ```
@@ -88,13 +83,13 @@ kubectl -n finetune rollout status deploy/finetune-platform
   # expect: "[serve] seeded bundled datasets + adapter…" and "[startup] seeded 43 observability tables…"
   ```
 
-## 6. Open the UI
+## 5. Open the UI
 ```bash
 kubectl -n finetune port-forward svc/finetune-platform 7100:7100
 # then open http://localhost:7100
 ```
 
-## 7. Verify the appliance (this is the test)
+## 6. Verify the appliance (this is the test)
 - [ ] **Chat tab** → tap a card (e.g. **Top OOM offenders**) → a table from the bundled data appears.
 - [ ] Tick **🗄️ Query data**, ask `top 5 namespaces by alert count` → it shows the SQL + the answer.
 - [ ] **Model dropdown** lists **`sre-assistant (fine-tuned)`** → pick it, ask
@@ -108,24 +103,24 @@ kubectl -n finetune port-forward svc/finetune-platform 7100:7100
   > PVC path (`--set persistence.storageClass=gp3`, the default). With
   > `persistence.enabled=false` they're ephemeral (fine for a demo).
 
-## 8. (Optional) Expose without port-forward
+## 7. (Optional) Expose without port-forward
 - **LoadBalancer** (gets an external address):
   ```bash
-  helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
+  helm upgrade finetune-platform oci://ghcr.io/t4tarzan/charts/finetune-platform --version 0.1.0 -n finetune --reuse-values \
     --set service.type=LoadBalancer
   kubectl -n finetune get svc finetune-platform -w     # copy EXTERNAL-IP
   ```
 - **nginx ingress under a sub-path** (`https://<host>/finetune-platform`):
   ```bash
-  helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
+  helm upgrade finetune-platform oci://ghcr.io/t4tarzan/charts/finetune-platform --version 0.1.0 -n finetune --reuse-values \
     --set ingress.enabled=true --set ingress.className=nginx --set basePath=/finetune-platform
   ```
 
-## 8b. Update an existing install to the latest image
+## 7b. Update an existing install to the latest image
 The published image (`:latest`) moves forward as the app improves. A node caches the old
 `:latest`, so a plain `helm upgrade` won't re-pull — force it:
 ```bash
-helm upgrade finetune-platform charts/finetune-platform -n finetune --reuse-values \
+helm upgrade finetune-platform oci://ghcr.io/t4tarzan/charts/finetune-platform --version 0.1.0 -n finetune --reuse-values \
   --set image.pullPolicy=Always
 kubectl -n finetune rollout restart deploy/finetune-platform
 kubectl -n finetune rollout status deploy/finetune-platform
@@ -133,7 +128,7 @@ kubectl -n finetune rollout status deploy/finetune-platform
 On restart, `serve.sh` re-seeds **only missing** bundled files (`cp -n`) — your uploads
 and retrained models on the PVC are untouched.
 
-## 9. Tear down (avoid AWS charges)
+## 8. Tear down (avoid AWS charges)
 ```bash
 helm uninstall finetune-platform -n finetune
 kubectl -n finetune delete pvc -l app.kubernetes.io/name=finetune-platform   # deletes the data
@@ -144,6 +139,7 @@ eksctl delete cluster --name finetune-test --region us-east-2
 ---
 
 ### Air-gapped clients
-Mirror the one image into your private registry, then in step 4 add
-`--set image.repository=<your-registry>/finetune-platform`. Nothing else changes —
-data, models, and the adapter are all inside the image.
+Mirror the **two images** (app + ollama) into your private registry, then in step 3 add
+`--set image.repository=<your-registry>/finetune-platform` and
+`--set ollama.image=<your-registry>/finetune-ollama:latest`. Nothing else changes —
+data, models, and the adapter are all inside the images.

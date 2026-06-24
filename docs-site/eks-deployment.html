@@ -97,15 +97,13 @@ runtime — the only network use is pulling the two public images once.</p>
 </div>
 
 <div class="step"><span class="n">1</span><h2>Install — one command</h2></div>
-<p>Point <code>kubectl</code> at your cluster (with a <code>gp3</code> StorageClass), get the chart, and install:</p>
-<pre><code>git clone https://github.com/t4tarzan/finetune-platform.git
-cd finetune-platform
-
-helm install finetune-platform charts/finetune-platform \
+<p>Point <code>kubectl</code> at your cluster (with a <code>gp3</code> StorageClass) and install
+straight from the registry — <strong>no <code>git clone</code>, no source to download</strong>:</p>
+<pre><code>helm install finetune-platform oci://ghcr.io/t4tarzan/charts/finetune-platform --version 0.1.0 \
   --namespace finetune --create-namespace \
   --set persistence.storageClass=gp3</code></pre>
-<p>The image (<code>ghcr.io/t4tarzan/finetune-platform:latest</code>, amd64) and the baked
-Ollama sidecar are the chart defaults — nothing else to set.</p>
+<p>The app + baked Ollama images (amd64) are the chart defaults — nothing else to set.
+(Want to customise? <code>git clone</code> the repo and install from <code>charts/finetune-platform</code> instead.)</p>
 <div class="note"><strong>Brand-new to AWS?</strong> The <code>AWS-CONSOLE-GUIDE.md</code> has a
 full click-by-click version using AWS CloudShell (no software on your computer) — log in,
 open CloudShell, paste a few commands, open a link. Use a <strong>m5.2xlarge</strong> node.</div>

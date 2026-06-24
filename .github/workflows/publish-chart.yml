@@ -1,0 +1,30 @@
+name: publish-chart
+
+# Package the Helm chart and publish it to GHCR as an OCI artifact, so users can
+# `helm install oci://ghcr.io/<owner>/charts/finetune-platform` directly — no git clone.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "charts/**"
+      - ".github/workflows/publish-chart.yml"
+  workflow_dispatch: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.2
+      - name: Package + push chart to GHCR (OCI)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          helm package charts/finetune-platform -d /tmp
+          helm push /tmp/finetune-platform-*.tgz oci://ghcr.io/${{ github.repository_owner }}/charts
+          echo "Published oci://ghcr.io/${{ github.repository_owner }}/charts/finetune-platform" >> "$GITHUB_STEP_SUMMARY"
