@@ -83,17 +83,23 @@ ingress:
 # rollout: kubectl exec -c ollama deploy/<release> -- ollama pull qwen2.5:0.5b
 ollama:
   enabled: false
-  image: "ollama/ollama:latest"
+  # Air-gapped sidecar with base models BAKED IN (no runtime `ollama pull`). Built by
+  # .github/workflows/docker-publish-ollama.yml from Dockerfile.ollama. Use the stock
+  # "ollama/ollama:latest" only if your cluster has internet to pull models.
+  image: "ghcr.io/t4tarzan/finetune-ollama:latest"
   resources:
     requests:
       cpu: "250m"
       memory: 1Gi
     limits:
       cpu: "2"
-      memory: 4Gi
+      memory: 6Gi
   persistence:
-    enabled: true
-    size: 20Gi              # pulled models persist
+    # OFF by default: the base models are baked into the image, so no volume is mounted
+    # over /root/.ollama (a mount would HIDE them). Turn ON only to persist models you
+    # pull at runtime on an internet-connected cluster.
+    enabled: false
+    size: 20Gi
 
 # Extra environment variables for the platform container.
 extraEnv: []                # e.g. [{ name: HF_TOKEN, value: hf_xxx }]

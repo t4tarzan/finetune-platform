@@ -107,9 +107,13 @@ spec:
               containerPort: 11434
           resources:
             {{- toYaml .Values.ollama.resources | nindent 12 }}
+          {{- if .Values.ollama.persistence.enabled }}
+          # Only mount a volume when persisting runtime-pulled models — otherwise a
+          # mount would hide the base models baked into the image at /root/.ollama.
           volumeMounts:
             - name: ollama
               mountPath: /root/.ollama
+          {{- end }}
         {{- end }}
       volumes:
         {{- if .Values.persistence.enabled }}
@@ -123,14 +127,10 @@ spec:
           persistentVolumeClaim:
             claimName: {{ include "finetune-platform.fullname" . }}-logs
         {{- end }}
-        {{- if .Values.ollama.enabled }}
+        {{- if and .Values.ollama.enabled .Values.ollama.persistence.enabled }}
         - name: ollama
-          {{- if .Values.ollama.persistence.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "finetune-platform.fullname" . }}-ollama
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

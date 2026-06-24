@@ -1,0 +1,22 @@
+# Air-gapped Ollama sidecar — base models BAKED IN (no runtime `ollama pull`).
+#
+# The stock ollama/ollama image is empty and pulls models from the internet on first
+# use, which fails on an air-gapped cluster. This image pre-pulls the base models at
+# BUILD time so they're present in the image layer (/root/.ollama) and serve offline.
+#
+# Build:  docker buildx build --platform linux/amd64 -f Dockerfile.ollama \
+#           -t ghcr.io/t4tarzan/finetune-ollama:latest --push .
+# Override the model set with --build-arg OLLAMA_MODELS_BAKE="qwen2.5:0.5b qwen2.5:7b".
+
+FROM ollama/ollama:latest
+
+ARG OLLAMA_MODELS_BAKE="qwen2.5:0.5b qwen2.5:1.5b"
+
+# Start the server in the background, wait for it, pull each model, then stop it.
+# The pulled models persist in /root/.ollama in this image layer.
+RUN (ollama serve &) \
+ && timeout 90 sh -c 'until ollama list >/dev/null 2>&1; do sleep 1; done' \
+ && for m in $OLLAMA_MODELS_BAKE; do echo "==> baking $m"; ollama pull "$m"; done \
+ && ollama list
+
+# entrypoint/cmd inherited from the base image (`ollama serve`).

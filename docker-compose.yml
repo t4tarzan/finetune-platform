@@ -61,19 +61,15 @@ services:
       retries: 5
       start_period: 60s
 
-  # Optional bundled Ollama — only starts with `--profile ollama` (make docker-up-ollama).
-  # Use this for a fully self-contained deployment instead of a host Ollama.
+  # Optional bundled Ollama for base-model chat — start with `--profile ollama`.
+  # This is the AIR-GAPPED image with base models BAKED IN (no runtime pull), so no
+  # ollama-pull step is needed. Point the platform at it with OLLAMA_HOST=http://ollama:11434.
   ollama:
-    image: ollama/ollama:latest
+    image: ghcr.io/t4tarzan/finetune-ollama:latest
     container_name: finetune-ollama
     profiles: ["ollama"]
-    # Not published to the host on purpose: the platform reaches it in-network as
-    # `ollama:11434`, and publishing 11434 would clash with a host Ollama. To access
-    # it from the host, add `ports: ["11434:11434"]` (only if no host Ollama runs).
     expose:
       - "11434"
-    volumes:
-      - ollama-data:/root/.ollama   # pulled models persist across runs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "ollama", "list"]
@@ -82,25 +78,7 @@ services:
       retries: 20
       start_period: 5s
 
-  # One-shot: pull base model(s) into the bundled Ollama at deploy time so it isn't
-  # empty. Override the list with OLLAMA_PULL_MODELS (space-separated), e.g.
-  #   OLLAMA_PULL_MODELS="qwen2.5:0.5b qwen2.5:7b" make docker-up-ollama
-  # Pulled models persist in the ollama-data volume, so this is a no-op on later runs.
-  ollama-pull:
-    image: ollama/ollama:latest
-    container_name: finetune-ollama-pull
-    profiles: ["ollama"]
-    depends_on:
-      ollama:
-        condition: service_healthy
-    environment:
-      - OLLAMA_HOST=http://ollama:11434
-      - OLLAMA_PULL_MODELS=${OLLAMA_PULL_MODELS:-qwen2.5:0.5b}
-    entrypoint: ["/bin/sh", "-c", "for m in $$OLLAMA_PULL_MODELS; do echo \"==> pulling $$m\"; ollama pull \"$$m\"; done"]
-    restart: "no"
-
 volumes:
   ftp-data:
   ftp-models:
   ftp-logs:
-  ollama-data:
