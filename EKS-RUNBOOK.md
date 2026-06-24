@@ -70,6 +70,11 @@ helm install finetune-platform charts/finetune-platform \
 ```
 - The image (`ghcr.io/t4tarzan/finetune-platform:latest`, amd64) is the chart default — nothing else to set.
 - Using a different StorageClass? change `--set persistence.storageClass=<name>`.
+- **Base-model chat, air-gapped:** add `--set ollama.enabled=true`. This runs the
+  `finetune-ollama` sidecar whose base models (qwen2.5:0.5b/1.5b) are **baked in** — no
+  internet pull. (The fine-tuned `sre-assistant`, cards, and Query-data already work
+  without it.) Needs the `finetune-ollama` image to be pullable (public, or a pull
+  secret) and a node with a bit more RAM (use `m5.2xlarge`).
 
 ## 5. Wait for it to come up
 ```bash
